@@ -1,4 +1,4 @@
-# Ignore all .exe and .dll files in the specified directories
+# Ignore .exe, .dll, .lib, .wav files in the specified directories
 extractenv/Lib/site-packages/imageio_ffmpeg/binaries/*.exe
 extractenv/Lib/site-packages/llvmlite/binding/*.dll
 extractenv/Lib/site-packages/torch/lib/*.dll
