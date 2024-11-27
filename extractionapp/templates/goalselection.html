@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goal Selection</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Arial', sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin-top: 50px;
+        }
+
+        h2 {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 30px;
+        }
+
+        .form-check-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .form-check-input {
+            margin-right: 10px;
+            border: 1px solid #0670d9;
+        }
+
+        .form-check {
+            padding: 15px;
+            border-radius: 5px;
+            background-color: #fff;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: background-color 0.3s ease, transform 0.3s ease;
+            cursor: pointer; /* Make the div clickable */
+        }
+
+        .form-check:hover {
+            background-color: #f0f8ff;
+            transform: scale(1.02);
+        }
+
+        .form-check-input:checked {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary, .btn-secondary {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            width: 48%;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+
+        .btn-secondary {
+            background-color: #ccc;
+            border-color: #ccc;
+        }
+
+        .btn-secondary:hover {
+            background-color: #888;
+            border-color: #888;
+        }
+
+        .form-group {
+            display: flex;
+            justify-content: space-between;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="text-center">What is your primary goal with your YouTube channel?</h2>
+        <form method="post" action="{% url 'save_goal_data' %}">
+            {% csrf_token %}
+            
+            <!-- Goal Options with Django conditional check for session value -->
+            {% for value, label in goal_options.items %}
+                <div class="form-check" onclick="document.getElementById('{{ value }}').checked = true;">
+                    <input class="form-check-input" type="radio" name="goal" id="{{ value }}" value="{{ value }}" 
+                           {% if request.session.goal == value %}checked{% endif %} required>
+                    <label class="form-check-label" for="{{ value }}">
+                        {{ label }}
+                    </label>
+                </div>
+            {% endfor %}
+
+            <!-- Form Navigation Buttons -->
+            <div class="form-group">
+                <!-- Previous Button (disabled on the first page) -->
+                <a href="{% url 'onboarding' %}" class="btn btn-secondary">Previous</a>
+                <!-- Next Button (on the last page, it should be 'Submit') -->
+                <button type="submit" class="btn btn-primary">Next</button>
+            </div>
+        </form>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Page</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'home/style.css' %}">
+    <link rel="icon" href="{% static 'home/icon.jpg' %}" type="image/x-icon">
+    <style>
+        body {
+            background-color: #f9f9fb;
+            font-family: Arial, sans-serif;
+        }
+
+        .heading {
+            color: #333;
+            text-align: left;
+            margin: 20px 0;
+            font-weight: bold;
+        }
+
+        .card {
+            border: none;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: scale(1.05);
+        }
+
+        .card-body {
+            color: white;
+            padding: 20px;
+        }
+
+        .icon {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
+        .card-content {
+            text-decoration: none;
+            color: white;
+        }
+
+        .card-content:hover {
+            text-decoration: none;
+            color: white;
+        }
+
+        .container {
+            max-width: 1200px;
+        }
+
+        .input-container {
+            margin-top: 30px;
+        }
+
+        .mobile-input {
+            width: 67%;
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .mobile-input:focus {
+            border-color: #007bff;
+            box-shadow: 0 0 8px rgba(0, 123, 255, 0.3);
+            outline: none;
+        }
+
+        .input-label {
+            font-size: 18px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .mobile-input::placeholder {
+            color: #888;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="navbar">
+        <div class="logo">
+            <a href="/">
+                <img src="{% static 'home/logo.jpg' %}" alt="Logo">
+            </a>
+        </div>
+        <nav class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#testimonials">Testimonials</a>
+        </nav>
+    </header>
+
+    <form method="post" action="{% url 'onboarding_action' %}">
+        {% csrf_token %}
+        <div class="container mt-5">
+            <h1 class="heading">Welcome to Fozato</h1>
+            <h5>Let's get you set up!</h5><br>
+            <div class="row g-4">
+            
+                <h6>What would you call your user?</h6>
+                <!-- Creator Card -->
+                <div class="col-md-4">
+                    <button type="submit" name="role" value="creator" class="card-content">
+                        <div class="card bg-primary text-center text-white {% if request.session.role == 'creator' %}selected{% endif %}">
+                            <div class="card-body">
+                                <i class="fas fa-paint-brush icon"></i>
+                                <h4>Creator</h4>
+                                <p>Create and share amazing content with your audience.</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+        
+                <!-- Business Card -->
+                <div class="col-md-4">
+                    <button type="submit" name="role" value="business" class="card-content">
+                        <div class="card bg-success text-center text-white {% if request.session.role == 'business' %}selected{% endif %}">
+                            <div class="card-body">
+                                <i class="fas fa-briefcase icon"></i>
+                                <h4>Business</h4>
+                                <p>Engage your customers and grow your business effectively.</p>
+                            </div>
+                        </div>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Optional JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

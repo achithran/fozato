@@ -1,0 +1,56 @@
+window.addEventListener("load", () => {
+    // Use MutationObserver to detect changes in the DOM (button may be dynamically loaded)
+    const observer = new MutationObserver(() => {
+      const uploadButton = document.querySelector('a[test-id="upload-icon-url"]');
+      //const uploadvideo = document.querySelector('button[aria-label="Upload videos"]');
+      //const uploadvideoicon = document.querySelector('tp-yt-paper-item[id="text-item-0"]');
+      
+      if (uploadButton) {
+        // Stop observing once the button is found
+        observer.disconnect();
+        console.log("Upload button found, adding event listener.");
+  
+        // Add a click event listener to the Upload Video button
+        uploadButton.addEventListener("click", (e) => {
+          //e.preventDefault(); // Prevent default action for the button
+          //e.stopImmediatePropagation(); // Stop other listeners from executing
+         // e.stopPropagation();
+          // Show the initial popup when the button is clicked
+           //showPopup();
+           // Show the popup when the button is clicked
+          console.log("Upload button clicked.");
+          showEnterKeywordPopup();
+          //minimalPopupTest();
+        });
+      }
+     
+      
+      // if (uploadvideo) {
+      //   // Stop observing once the button is found
+      //   observer.disconnect();
+  
+      //   // Add a click event listener to the Upload Video button
+      //   uploadvideo.addEventListener("click", (e) => {
+      //     e.stopPropagation();
+      //     // Show the initial popup when the button is clicked
+      //     showPopup();
+      //   });
+      // }
+      // if (uploadvideoicon) {
+      //   // Stop observing once the button is found
+      //   observer.disconnect();
+  
+      //   // Add a click event listener to the Upload Video button
+      //   uploadvideoicon.addEventListener("click", (e) => {
+      //     e.stopPropagation();
+      //     // Show the initial popup when the button is clicked
+      //     showPopup();
+      //   });
+      // }
+
+
+    });
+  
+    // Start observing the document body for any changes
+    observer.observe(document.body, { childList: true, subtree: true });
+  });

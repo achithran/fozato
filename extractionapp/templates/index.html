@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SEO Keyword Extractor</title>
+</head>
+<body>
+    
+<div>
+    <div  style="margin:100px 100px;padding: 10px 100px;">
+    
+    <form id="videoForm" method="POST" action="{% url 'extract_keywords' %}" style="border:1px solid black;background-color: #98abb9; padding: 50px;width:800px;">
+        {% csrf_token %}
+        <h1 style="text-align: center;color:#141212;">Extract SEO Elements</h1> 
+        <h4 style="text-align: center;"">Enter Youtube url or Upload video</h4><br><br>
+        <label for="video_url">YouTube Video URL:</label>
+        <input type="text" id="video_url" name="video_url" placeholder="Enter YouTube video URL">
+        
+        <label for="video_file">Upload Video:</label>
+        <input type="file" id="video_file" name="video_file" accept="video/*"><br><br><br>
+
+        <textarea name="text" rows="10" cols="30" placeholder="Enter text for keyword extraction..."></textarea><br>
+
+        
+        <button type="submit" style="color:rgb(225, 225, 235);background-color: #757579;height: 50px;
+        width: 200px;margin-left: 300px;font-size: 17px;">Extract Keywords</button>
+    </form>
+</div>
+</div>    
+
+    <div id="result"></div>
+    <div id="result1"></div>
+
+    <script>
+        document.getElementById("videoForm").onsubmit = function(event) {
+            event.preventDefault();
+            const formData = new FormData(this);
+            
+            fetch(this.action, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultDiv = document.getElementById("result");
+                if (data.error) {
+                    resultDiv.innerHTML = `<p>Error: ${data.error}</p>`;
+                } else {
+                    resultDiv.innerHTML = `
+                        <h2>Results</h2>
+                        <p><strong>Video ID:</strong> ${data.video_id || 'N/A'}</p>
+                        <p><strong>Title:</strong> ${data.title || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${data.description || 'N/A'}</p>
+                        <p><strong>Tags:</strong> ${data.tags ? data.tags.join(', ') : 'N/A'}</p>
+                        <p><strong>Transcription:</strong> ${data.transcription || 'N/A'}</p>
+                    `;
+                }
+    
+                const result1Div = document.getElementById("result1");
+                if (data.error) {
+                    result1Div.innerHTML = `<p>Error: ${data.error}</p>`;
+                } else {
+                    result1Div.innerHTML = `
+                        <h2>Extracted details</h2>
+                        <p><strong>Extracted Keywords:</strong> ${data.keywords.join(', ') || 'N/A'}</p>
+                        
+                        <p><strong>Title:</strong> ${data.title || 'N/A'}</p>
+                        <p><strong>Description:</strong> ${data.description || 'N/A'}</p>
+                        <p><strong>Tags:</strong> ${data.tags || 'N/A'}</p>
+                    `;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        };
+    </script>
+    
+</body>
+</html>

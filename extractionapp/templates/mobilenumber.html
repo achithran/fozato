@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phone Number with Country Flag</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/flag-icons/css/flag-icons.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f6f8;
+            color: #333;
+            font-family: 'Arial', sans-serif;
+        }
+        .btn-primary, .btn-secondary {
+            font-size: 1.2rem;
+            padding: 10px 20px;
+            width: 48%;
+            margin-top: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .container {
+            max-width: 450px;
+            margin: 100px auto;
+            padding: 40px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .form-title {
+            font-size: 28px;
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .form-control {
+            background-color: #f8f9fa;
+            color: #333;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        .form-control:focus {
+            border-color: #00c853;
+            background-color: #e9ecef;
+            color: #333;
+        }
+
+        .dropdown-menu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            display: none;
+            background-color: #ffffff;
+            border-radius: 5px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+        }
+
+        .dropdown-item {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            cursor: pointer;
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item .fi {
+            margin-right: 10px;
+        }
+
+        .country-code-wrapper {
+            position: relative;
+            width: 100%;
+            background-color: #f8f9fa;
+            color: #333;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+            cursor: pointer;
+        }
+
+        .country-code-display {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            font-size: 16px;
+            background-color: transparent;
+            border: none;
+            width: 100%;
+            cursor: pointer;
+        }
+
+        .country-code-display .flag-icon {
+            margin-right: 10px;
+            font-size: 20px;
+        }
+
+        .country-code-display input {
+            width: 100%;
+            border: none;
+            background-color: transparent;
+            font-size: 16px;
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2 class="form-title">Enter phone number to proceed</h2>
+
+    <form id="phoneForm" action="{% url 'onboarding' %}" method="post">
+        {% csrf_token %}
+        <div class="mb-3">
+            <div class="input-group">
+                <div class="country-code-wrapper">
+                    <!-- Display selected country code with flag -->
+                    <div class="country-code-display" id="countryCodeDisplay">
+                        <span class="flag-icon fi fi-us"></span> +1 (USA)
+                        <input type="hidden" name="country_code" id="countryCodeValue" value="+1">
+                    </div>
+                    <div class="dropdown-menu" id="countryDropdown">
+                        <div class="dropdown-item" data-value="+1" data-label="USA" data-flag="fi-us">
+                            <span class="fi fi-us"></span> +1 (USA)
+                        </div>
+                        <div class="dropdown-item" data-value="+91" data-label="India" data-flag="fi-in">
+                            <span class="fi fi-in"></span> +91 (India)
+                        </div>
+                        <div class="dropdown-item" data-value="+44" data-label="UK" data-flag="fi-gb">
+                            <span class="fi fi-gb"></span> +44 (UK)
+                        </div>
+                        <div class="dropdown-item" data-value="+61" data-label="Australia" data-flag="fi-au">
+                            <span class="fi fi-au"></span> +61 (Australia)
+                        </div>
+                    </div>
+                </div>
+                <input type="tel" class="form-control phone-input" id="phone" name="phone" placeholder="Enter your phone number" required>
+            </div>
+            <div id="phoneError" class="error-message"></div>
+        </div>
+
+        <div class="d-flex justify-content-between mt-4">
+            <button type="button" class="btn btn-secondary">Previous</button>
+            <button type="submit" class="btn btn-primary"  id="nextButton" style="margin-left: auto;">Next</button>
+        </div>
+        
+    </form>
+</div>
+
+<script>
+    const countryCodeDisplay = document.getElementById('countryCodeDisplay');
+    const countryCodeValue = document.getElementById('countryCodeValue');
+    const countryDropdown = document.getElementById('countryDropdown');
+    const countryCodeItems = document.querySelectorAll('.dropdown-item');
+    const phoneInput = document.getElementById('phone');
+    const phoneError = document.getElementById('phoneError');
+    const form = document.getElementById('phoneForm');
+    const phoneRegex = {
+        "+1": /^[0-9]{10}$/,  // USA
+        "+91": /^[0-9]{10}$/, // India
+        "+44": /^[0-9]{10}$/, // UK
+        "+61": /^[0-9]{9}$/   // Australia
+    };
+
+    // Show the dropdown when clicking the country code input
+    countryCodeDisplay.addEventListener('click', function () {
+        countryDropdown.style.display = countryDropdown.style.display === 'block' ? 'none' : 'block';
+    });
+
+    // Select a country code from the dropdown
+    countryCodeItems.forEach(item => {
+        item.addEventListener('click', function () {
+            const value = item.getAttribute('data-value');
+            const label = item.getAttribute('data-label');
+            const flagClass = item.getAttribute('data-flag');  // Get the flag class from the data-flag attribute
+
+            // Update the display text with selected country code and flag
+            countryCodeDisplay.innerHTML = `<span class="flag-icon fi ${flagClass}"></span> ${value} (${label})`;
+            countryCodeValue.value = value;
+
+            // Close the dropdown
+            countryDropdown.style.display = 'none';
+        });
+    });
+
+    // Validate phone number format with country code
+    form.addEventListener('submit', function (e) {
+        e.preventDefault();
+
+        const phoneValue = phoneInput.value;
+        const selectedCountryCode = countryCodeValue.value;
+
+        if (!selectedCountryCode) {
+            phoneError.textContent = "Please select a country code.";
+            return;
+        }
+
+        if (!phoneRegex[selectedCountryCode].test(phoneValue)) {
+            phoneError.textContent = "Please enter a valid phone number for the selected country code.";
+        } else {
+            phoneError.textContent = "";
+            alert("Phone number is valid. Proceeding...");
+        }
+    });
+     // Adding an event listener to the Next button
+     document.getElementById('nextButton').addEventListener('click', function(e) {
+        // You can perform any validation or additional actions here
+
+        // Submit the form (if form validation is successful)
+        document.getElementById('phoneForm').submit();
+    });
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

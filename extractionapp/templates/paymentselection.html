@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f1f1f1;
+            font-family: 'Arial', sans-serif;
+            color: #333;
+        }
+
+            .container {
+        /* display: flex; */
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        /* padding-left: 40px;
+        padding-right: 40px; */
+        padding-top: 60px;
+        margin-top: 40px;
+    }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            font-weight: 700;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+
+        h4 {
+            text-align: center;
+            color: #6c757d;
+            font-weight: 400;
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+        }
+
+        .toggle-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 1rem 0;
+            font-size: 1rem;
+        }
+
+        .toggle-section p {
+            margin: 0 1rem;
+        }
+
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            border-radius: 34px;
+            cursor: pointer;
+            transition: 0.4s;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 4px;
+            bottom: 3px;
+            background-color: white;
+            border-radius: 50%;
+            transition: 0.4s;
+        }
+
+        input:checked + .slider {
+            background-color: #007bff;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        /* Pricing Container */
+        .pricing-container {
+            max-width: 600px;  /* Set both containers to the same width */
+            width: 100%;
+            margin-bottom: 30px;  /* Add spacing between the two sections */
+            text-align: center;
+        }
+
+        .pricing-card {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 1.5rem;
+            width: 100%;
+            max-width: 380px;
+            text-align: center;
+            transition: box-shadow 0.3s ease;
+            height:800px;
+        }
+
+        .pricing-card:hover {
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .plan-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            justify-content: center;
+        }
+
+        .plan-header i {
+            font-size: 36px; /* Icon size */
+        }
+
+        .plan-header .monthly-icon {
+            color: #FF6347; /* Tomato red for monthly */
+        }
+
+        .plan-header .yearly-icon {
+            color: #1E90FF; /* Dodger blue for yearly */
+        }
+
+        .price {
+            
+            align-items: baseline;
+            gap: 0.2rem;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #007bff;
+            margin: 0.5rem 0;
+        }
+
+        .description {
+            color: #666;
+            margin: 0.5rem 0;
+            font-size: 1rem;
+        }
+
+        .features {
+    list-style-type: none; /* Remove default bullets */
+    padding-left: 0;
+    margin: 0;
+    color: #333;
+    font-size: 1rem;
+    font-weight: 400;
+    text-align: left; /* Align text to the left */
+    margin-top: 1rem;
+    height:500px
+}
+
+.features li {
+    display: flex;
+    align-items: center;
+    gap: 1rem; /* Space between icon and text */
+    margin-bottom: 1rem;
+    font-size: 15px;
+    color: #555; /* Slightly lighter color for text */
+    transition: color 0.3s ease, transform 0.3s ease;
+}
+
+.features li i {
+    font-size: 1.2rem; /* Icon size */
+    color: #28a745; /* Green color for the check icon */
+    transition: transform 0.3s ease;
+}
+
+/* Hover effect */
+.features li:hover {
+    color: #007bff; /* Blue color on hover */
+    transform: scale(1.05); /* Slight zoom effect */
+}
+
+.features li:hover i {
+    transform: scale(1.2); /* Scale icon on hover */
+}
+
+/* Optional: Style the "check" icon or use Font Awesome for visual enhancement */
+.features li i {
+    content: "\f00c"; /* Font Awesome checkmark icon */
+    font-family: "Font Awesome 5 Free", sans-serif;
+    font-weight: 900; /* Bold the checkmark */
+}
+
+
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 0.8rem;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        button:hover {
+            background: #0056b3;
+            transform: scale(1.05);
+        }
+
+        .cancel-info {
+            font-size: 0.9rem;
+            color: #999;
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+
+        .row-flex {
+            display: flex;
+            justify-content: space-between;
+           
+            margin-top: 2rem;
+        }
+
+     
+/* Coupon Card */
+.coupon-card {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+    width: 100%;
+    max-width: 300px; /* Same width as pricing-container */
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid #ddd;
+    height: 500px;
+}
+
+
+/* Heading for Coupon Section */
+.coupon-card h4 {
+    font-size: 1.6rem;
+    font-weight: 600;
+    margin-bottom: 15px;
+    color: #333;
+}
+
+/* Subtitle Text */
+.coupon-card p {
+    font-size: 1rem;
+    font-weight: 400;
+    color: #6c757d;
+    margin-bottom: 20px;
+}
+
+
+/* Input Field Styling */
+#coupon-input {
+    width: 100%;
+    padding: 12px;
+    font-size: 1.2rem;
+    color: #333;
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background-color: #f9f9f9;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Input Field Focus */
+#coupon-input:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+/* Button or Submit Option */
+.coupon-card button {
+    background-color: #007bff;
+    color: white;
+    padding: 12px 25px;
+    font-size: 1rem;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+/* Button Hover Effect */
+.coupon-card button:hover {
+    background-color: #0056b3;
+    transform: scale(1.05);
+}
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .pricing-container, .coupon-card {
+        width: 90%;  /* Adjust width for mobile screens */
+        height: auto; /* Allow height to adjust based on content */
+        padding: 15px;
+    }
+
+    .coupon-card h4 {
+        font-size: 1.4rem;
+    }
+
+    .pricing-container h2 {
+        font-size: 1.4rem;
+    }
+}
+
+
+        .hide {
+            display: none;
+        }
+
+        /* Styling for the additional subheadings under Coupon Card */
+.coupon-info {
+    margin-top: 20px;
+    text-align: left;
+    padding: 15px;
+    background-color: #f9f9f9;
+    border-radius: 8px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    border: 1px solid #ddd;
+}
+
+.coupon-info h5 {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+    color: #333;
+}
+
+.coupon-info p {
+    font-size: 1rem;
+    color: #6c757d;
+    margin-bottom: 15px;
+}
+
+/* Responsive adjustments for coupon-info */
+@media screen and (max-width: 768px) {
+    .coupon-info {
+        padding: 10px;
+    }
+
+    .coupon-info h5 {
+        font-size: 1.1rem;
+    }
+
+    .coupon-info p {
+        font-size: 0.9rem;
+    }
+}
+
+    </style>
+
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2><i class="fas fa-credit-card"></i> Choose Your Payment Plan</h2>
+        <h4>Select the payment plan that suits your needs!</h4>
+
+        <form method="post" id="payment-form">
+            {% csrf_token %}
+            <div class="toggle-section">
+                <p><i class="fas fa-calendar"></i> Pay Yearly</p>
+                
+                <label class="switch">
+                    <input type="checkbox" id="plan-toggle">
+                    <span class="slider"></span>
+                </label>
+                <p><i class="fas fa-calendar-day"></i> Pay Monthly</p>
+            </div>
+
+            <div class="row-flex">
+                <input type="hidden" name="amount" id="plan-amount">
+                <input type="hidden" name="plan_duration" id="plan-duration">
+                <!-- Pricing Plans -->
+                <div class="col-md-4">
+                    <div class="pricing-container">
+
+                        <!-- Yearly Plan -->
+                        <div id="yearly-plan" class="pricing-card hide">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar yearly-icon"></i>
+                                <h3>Basic Plan</h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $12.49/month
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹832/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for long-term content creators with savings.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> Try Free Trial for 3 Days with 1 Video SEO & 3 Thumbnails
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>10 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Trending Tags Optimized with Google Trends (10 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Thumbnail Generation (10 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Title Generation (10 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Description Generation (10 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Chapters Generation (10 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Hashtags (10 Videos / month)
+
+                                </li>
+                             
+                            </ul>
+                            <button type="button" onclick="startPayment('yearly')">Get Fozato Basic!</button>
+                            <a href="" style="    font-size: 22px;
+                            color: #dc3545;
+                            text-decoration: none;
+                            padding-top: 10px;
+                            border-top: 2px dotted #007bff;
+                            border-bottom: 2px dotted #007bff;
+                            padding-bottom: 8px;
+                            font-weight: 00;">Start Your Free Trial Now!</a>
+                            
+
+                           
+                        </div>
+                        <!-- Monthly Plan -->
+                        <div id="monthly-plan" class="pricing-card">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar-day monthly-icon"></i>
+                                <h3>Basic Plan</h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $14.99/month
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹999/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for individual content creators.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> Try Free Trial for 3 Days with 1 Video SEO & 3 Thumbnails
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>10 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Trending Tags Optimized with Google Trends (10 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Thumbnail Generation (10 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Title Generation (10 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Description Generation (10 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Chapters Generation (10 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Hashtags (10 Videos)
+
+                                </li>
+                            </ul>
+                            
+                            <button type="button" onclick="startPayment('monthly')">Get Fozato Basic!</button> <br><br>
+                            <a href="" style="    font-size: 22px;
+                            color: #dc3545;
+                            text-decoration: none;
+                            padding-top: 10px;
+                            border-top: 2px dotted #007bff;
+                            border-bottom: 2px dotted #007bff;
+                            padding-bottom: 8px;
+                            font-weight: 00;">Start Your Free Trial Now!</a>
+                            <!-- <a class="cancel-info" href="{% url 'discovery_selection' %}">Previous</a> -->
+                        </div>
+    
+                        
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="pricing-container">
+
+                         <!-- Yearly Plan -->
+                         <div id="yearly-standard-plan" class="pricing-card hide">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar yearly-icon"></i>
+                                <h3>Standard Plan</h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $33.32/month
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹1666/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for long-term content creators with savings.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i>30 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> 3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Trending Tags Optimized with Google Trends (30 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>  Automated Thumbnail Generation (30 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Title Generation (30 Videos / month)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Description Generation (30 Videos / month)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Chapters Generation (30 Videos / month)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>  Automated Hashtags (30 Videos / month)
+
+                                </li>
+                            </ul>
+                            <button type="button" onclick="startPayment('yearly')">Get Fozato Standard!</button>
+                          
+                        </div>
+                        <!-- Monthly Plan -->
+                        <div id="monthly-standard-plan" class="pricing-card">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar-day monthly-icon"></i>
+                                <h3>Standard Plan
+                                </h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $39.99/month
+
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹1999/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for individual content creators.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i>30 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> 3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Trending Tags Optimized with Google Trends (30 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>  Automated Thumbnail Generation (30 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Title Generation (30 Videos)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Description Generation (30 Videos)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Chapters Generation (30 Videos)
+
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>  Automated Hashtags (30 Videos)
+
+                                </li>
+                            </ul>
+                            <button type="button" onclick="startPayment('monthly')">Get Fozato Standard!</button>
+                           
+                        </div>
+    
+                       
+                    </div>
+                </div>
+               
+                <div class="col-md-4">
+                    <div class="pricing-container">
+
+                         <!-- Yearly Plan -->
+                         <div id="yearly-premium-plan" class="pricing-card hide">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar yearly-icon"></i>
+                                <h3>Premium plan</h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $66.65/month
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹3333/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for long-term content creators with savings.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> 50 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> 3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Trending Tags Optimized with Google Trends (50 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Thumbnail Generation (50 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Title Generation (50 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Description Generation (50 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Chapters Generation (50 Videos / month)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Hashtags (50 Videos / month)
+                                </li>
+                            </ul>
+                            <button type="button" onclick="startPayment('yearly')">Get Fozato Premium!</button>
+                            
+                        </div>
+                        <!-- Monthly Plan -->
+                        <div id="monthly-premium-plan" class="pricing-card">
+                            <div class="plan-header">
+                                <i class="fas fa-calendar-day monthly-icon"></i>
+                                <h3>Premium Plan</h3>
+                            </div>
+                            <div class="price">
+                                <label>
+                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    $79.99/month
+                                </label>
+                                <label>
+                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    ₹3499/month
+                                </label>
+                            </div>
+                            <!-- <p class="description">Best for individual content creators.</p> -->
+                            <hr>
+                            <ul class="features">
+                                <li><i class="fas fa-check-circle"></i> 50 Real-Time Video SEOs During Upload
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> 3 Thumbnails per Video for A/B Testing
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Trending Tags Optimized with Google Trends (50 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Thumbnail Generation (50 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Title Generation (50 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i>Automated Description Generation (50 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Chapters Generation (50 Videos)
+                                </li>
+                                <li><i class="fas fa-check-circle"></i> Automated Hashtags (50 Videos)
+                                </li>
+                            </ul>
+                            <button type="button" onclick="startPayment('monthly')">Get Fozato Premium!</button>
+                          
+                        </div>
+    
+                       
+                    </div>
+                </div>
+
+                <!-- Coupon Code Section -->
+        <!-- Coupon Code Section -->
+        <!-- <div id="coupon-card" class="coupon-card"> -->
+            <!-- <h4>Have a Coupon Code?</h4>
+            <p>Enter your coupon code below to apply discounts to your order.</p> <br>
+            <input type="text" id="coupon-input" placeholder="Enter Coupon Code">
+            <button>Apply Coupon</button> -->
+
+            <!-- <div class="coupon-info">
+                
+                <p>**Coupons are valid for one-time use only and cannot be combined with other offers.</p>
+                <!- <h5>Coupon Expiry</h5>
+                <p>All coupons expire within 30 days of issue. Make sure to use them before they expire!</p>
+                <h5>Contact Support</h5>
+                <p>If you encounter any issues, please reach out to our support team for assistance.</p> -->
+            <!-- </div> --> 
+        </div>
+
+        </form>
+    </div>
+
+    <script>
+        // Update the startPayment function to handle both duration and currency
+function startPayment(duration) {
+    const selectedRadio = document.querySelector('input[name="currency"]:checked');
+    if (!selectedRadio) {
+        alert("Please select a plan amount.");
+        return;
+    }
+
+    // Get currency from the selected radio button
+    const currency = selectedRadio.value;
+
+    const isYearly = duration === "yearly"; // Check if it's the yearly plan
+    const amount = currency === "USD"
+        ? (isYearly ? 190 : 99)  // $190 for yearly, $99 for monthly
+        : (isYearly ? 9990 : 999); // ₹9990 for yearly, ₹999 for monthly
+
+    // Set hidden form fields to save plan details
+    document.getElementById("plan-duration").value = duration;
+    document.getElementById("plan-amount").value = amount;
+
+    // Fetch order ID from backend
+    fetch(`/create_order/${amount}/`, { method: "GET" })
+    .then(response => response.json())
+    .then(order => {
+        const options = {
+            "key": "{{ rzp_test_0XYpYSiR8V6hyh }}",  // Secure this key in the backend
+            "amount": amount * 100,  // Convert to smallest currency unit for Razorpay
+            "currency": currency,
+            "name": "Fozato",
+            "description": "Subscription Payment",
+            "order_id": order.id,
+            "handler": function (response) {
+                // Send payment response to backend for verification
+                fetch("/payment/success/", {
+                    method: "POST",
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "X-CSRFToken": "{{ csrf_token }}" 
+                    },
+                    body: JSON.stringify({
+                        ...response,
+                        plan_duration: duration,
+                        plan_amount: amount
+                    })
+                })
+                .then(() => window.location.href = "/success/") // Redirect after success
+                .catch(() => alert("Payment verification failed"));
+            },
+            "prefill": {
+                "email": "user@example.com",
+                "contact": "9999999999"
+            },
+            "theme": {
+                "color": "#007bff"
+            }
+        };
+        
+        const rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(err => console.log("Order creation failed:", err));
+}
+
+// Modify the plan toggle behavior for better usability
+const planToggle = document.getElementById('plan-toggle');
+const monthlyPlan = document.getElementById('monthly-plan');
+const yearlyPlan = document.getElementById('yearly-plan');
+const monthly_standard_plan = document.getElementById('monthly-standard-plan')
+const yearly_standard_plan = document.getElementById('yearly-standard-plan')
+const monthly_premium_plan = document.getElementById('monthly-premium-plan')
+const yearly_premium_plan = document.getElementById('yearly-premium-plan')
+
+// Ensure toggle is unchecked by default
+planToggle.checked = false;
+
+// Show yearly plans and hide monthly plans initially
+monthlyPlan.classList.add('hide');
+monthly_standard_plan.classList.add('hide');
+monthly_premium_plan.classList.add('hide');
+yearlyPlan.classList.remove('hide');
+yearly_standard_plan.classList.remove('hide');
+yearly_premium_plan.classList.remove('hide');
+
+
+// Switch between monthly and yearly plans based on the toggle state
+planToggle.addEventListener('change', () => {
+    if (planToggle.checked) {
+        yearlyPlan.classList.add('hide');
+        yearly_standard_plan.classList.add('hide');
+        yearly_premium_plan.classList.add('hide');
+        monthlyPlan.classList.remove('hide');
+        monthly_standard_plan.classList.remove('hide');
+        monthly_premium_plan.classList.remove('hide');
+       
+
+    } else {
+        monthlyPlan.classList.add('hide');
+        monthly_standard_plan.classList.add('hide');
+        monthly_premium_plan.classList.add('hide');
+        yearlyPlan.classList.remove('hide');
+        yearly_standard_plan.classList.remove('hide');
+        yearly_premium_plan.classList.remove('hide');
+    }
+});
+
+// Update the setAmount function to only adjust amount for the selected plan duration
+function setAmount() {
+    const selectedRadio = document.querySelector('input[name="currency"]:checked');
+    if (!selectedRadio) return;  // Exit if no currency is selected
+
+    const currency = selectedRadio.value;
+    const isYearly = document.getElementById('plan-toggle').checked; // Check if yearly plan is selected
+    const amount = currency === "USD" 
+        ? (isYearly ? 190 : 99)  // $190 for yearly, $99 for monthly
+        : (isYearly ? 9990 : 999); // ₹9990 for yearly, ₹999 for monthly
+
+    document.getElementById("plan-amount").value = amount;
+}
+
+    </script>
+   
+</body>
+</html>

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Page</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'home/style.css' %}">
+    <style>
+        button{
+            background-color: rgb(255, 164, 28) !important;
+            height:50px;
+        }
+        body {
+            background-color: #121212;
+            color: #f1f1f1;
+            font-family: Arial, sans-serif;
+        }
+
+        .form-container {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background-color: #3d3939;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.5);
+        }
+
+        .form-title {
+            font-size: 45px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-align: center;
+            color: #fcfafa;
+            margin-top: 50px;
+        }
+
+        .form-subtitle {
+            text-align: center;
+            font-size: 45px;
+            margin-bottom: 20px;
+            color: #dae90b;
+            font-weight: 800;
+        }
+
+        .btn-primary {
+            background-color: #00c853;
+            border: none;
+            color: #121212;
+        }
+
+        .btn-primary:hover {
+            background-color: #00a63f;
+        }
+
+        .razorpay-container {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .razorpay-image {
+            max-width: 150px;
+            margin: 20px auto;
+        }
+
+        .form-label {
+            color: #f1f1f1;
+        }
+
+        .form-control {
+            background-color: #2e2e2e;
+            color: #f1f1f1;
+            border: 1px solid #555;
+        }
+
+        .form-control::placeholder {
+            color: #999;
+        }
+
+        .form-control:focus {
+            background-color: #2e2e2e;
+            color: #f1f1f1;
+            border-color: #00c853;
+        }
+        .country-code {
+        max-width: 80px; /* Decreased from 120px to 80px */
+        border-radius: 5px 0 0 5px;
+        background-color: #2e2e2e;
+        border-right: none;
+        color: #f1f1f1;
+    }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="form-title">Congrats! You're 1 Step Away from </h1>
+        <p class="form-subtitle">FOZATO YOUTUBE AUTO SEO APP!</p>
+        <div class="form-container">
+            <form id="contactForm" method="post" action="{% url 'contactsave' %}">
+                {% csrf_token %}
+                <!-- First Name -->
+                <div class="mb-3">
+                    <label for="firstName" class="form-label">First Name</label>
+                    <input type="text" class="form-control" id="firstName" name="first_name" placeholder="Enter your first name" required>
+                </div>
+
+                <!-- Last Name -->
+                <div class="mb-3">
+                    <label for="lastName" class="form-label">Last Name</label>
+                    <input type="text" class="form-control" id="lastName" name="last_name" placeholder="Enter your last name" required>
+                </div>
+
+                <!-- Email -->
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email</label>
+                    <input type="email" class="form-control" id="email" name="email" placeholder="Enter your email address" required>
+                    <div id="emailError" class="error-message"></div>
+                </div>
+
+                <!-- Phone Number with Country Code -->
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone Number</label>
+                    <div class="input-group">
+                        <select class="form-select country-code" id="countryCode" name="country_code" required>
+                            <option value="" disabled selected>Country Code</option>
+                            <option value="+1">+1 (USA)</option>
+                            <option value="+91">+91 (India)</option>
+                            <option value="+44">+44 (UK)</option>
+                            <option value="+61">+61 (Australia)</option>
+                            <option value="+81">+81 (Japan)</option>
+                            <!-- Add more country codes -->
+                        </select>
+                        <input type="text" class="form-control phone-input" id="phone" name="phone" placeholder="Enter your phone number" required>
+                    </div>
+                    <div id="phoneError" class="error-message"></div>
+                </div>
+
+                <!-- Razorpay Payment Info -->
+                <div class="mb-3">
+                    <label for="amount" class="form-label">Payment Amount (INR)</label>
+                    <input type="number" class="form-control" id="amount" name="amount" placeholder="Enter amount to pay" required>
+                </div>
+
+                <!-- Razorpay Logo -->
+                <div class="razorpay-container">
+                    <img src="{% static 'home/razorpay.svg' %}" alt="Razorpay Logo" class="razorpay-image">
+                    <button id="rzp-button1" class="btn btn-primary w-100">Pay with Razorpay</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Razorpay Payment Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <script>
+      document.getElementById('rzp-button1').onclick = function (e) {
+    e.preventDefault();
+
+    const firstName = document.getElementById('firstName').value;
+    const lastName = document.getElementById('lastName').value;
+    const email = document.getElementById('email').value;
+    const phone = document.getElementById('phone').value;
+    const countryCode = document.getElementById('countryCode').value;
+    const amount = document.getElementById('amount').value * 100; // Convert to paise
+
+    // Prepare the data to be sent to the server
+    const formData = new FormData();
+    formData.append('first_name', firstName);
+    formData.append('last_name', lastName);
+    formData.append('email', email);
+    formData.append('phone', phone);
+    formData.append('country_code', countryCode);
+    formData.append('amount', amount);
+
+    // Send the form data to save the user details
+    fetch("{% url 'contactsave' %}", {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Simulate a successful payment for testing purposes
+                const mockPaymentDetails = {
+                    payment_id: "pay_mock12345",
+                    order_id: "order_mock12345",
+                    signature: "mock_signature"
+                };
+
+                // Send the mock payment details to the backend
+                fetch("{% url 'save_payment_details' %}", {
+                    method: 'POST',
+                    body: JSON.stringify(mockPaymentDetails),
+                    headers: {
+                        'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                        'Content-Type': 'application/json'
+                    }
+                })
+                    .then(paymentResponse => paymentResponse.json())
+                    .then(paymentData => {
+                        if (paymentData.success) {
+                            window.location.href = paymentData.redirect_url;
+                        } else {
+                            alert("Failed to save payment details.");
+                        }
+                    })
+                    .catch(error => {
+                        alert("Error while saving payment details: " + error.message);
+                    });
+            } else {
+                alert("There was an error saving your data. Please try again.");
+            }
+        })
+        .catch(error => {
+            alert("There was an error. Please try again.");
+        });
+};
+
+    </script>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

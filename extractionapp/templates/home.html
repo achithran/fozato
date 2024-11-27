@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fozato</title>
+    <link rel="stylesheet" href="{% static 'home/style.css' %}">
+</head>
+<body>
+
+    <!-- Navbar -->
+    <header class="navbar">
+        <div class="logo">
+            <a href="/">
+                <img src="{% static 'home/logo.jpg' %}" alt="Logo">
+            </a>
+        </div>
+        <nav class="nav-links">
+            <a href="#features">Features</a>
+            <a href="#testimonials">Testimonials</a>
+            <a href="#get-started">Get Started</a>
+        </nav>
+        <a href="#" class="cta-button">Sign In</a>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <h1>Grow Your Audience with Fozato</h1>
+        <p>Automate your content and increase engagement effortlessly.</p><br>
+        <a href="{% url 'youtube_authenticate' %}" class="cta-button">Get Started</a><br><br>
+        <div class="star-rating">
+            <span class="star">&#9733;</span>
+            <span class="star">&#9733;</span>
+            <span class="star">&#9733;</span>
+            <span class="star">&#9733;</span>
+            <span class="star">&#9733;</span>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features-section">
+        <h2>Our Features</h2>
+        <div class="features-container">
+            <!-- Card 1: Scheduling -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/keyword.png' %}" alt="Calendar Icon">
+                </div>
+                <h3>Scheduling</h3>
+                <p>Visually plan and schedule your content delivery with click, drag and drop and automation. It’s as easy as that.</p>
+            </div>
+    
+            <!-- Card 2: Social Inbox -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/play.png' %}" alt="Inbox Icon">
+                </div>
+                <h3>Social Inbox</h3>
+                <p>Reply, like, engage - even retweet and quote tweet - to all mentions and comments directly from FeedHive's Social Inbox.</p>
+            </div>
+    
+            <!-- Card 3: FeedHive AI -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/settings.png' %}" alt="AI Icon">
+                </div>
+                <h3>SEO</h3>
+                <p>Post when your audience are active and listening, generate the right hashtags and predict how well your post will do - before publishing.</p>
+            </div>
+    
+            <!-- Card 4: Analytics -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/keyword.png' %}" alt="Analytics Icon">
+                </div>
+                <h3>Analytics</h3>
+                <p>FeedHive visualizes follower activity and post engagements, presenting you with actionable, easy-to-read insights that will help you grow.</p>
+            </div>
+    
+            <!-- Card 5: Collaboration -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/play.png' %}" alt="Collaboration Icon">
+                </div>
+                <h3>Collaboration</h3>
+                <p>Collaborate with your team and invite your clients to watch along. Use FeedHive's approval workflow to ensure the highest possible quality.</p>
+            </div>
+    
+            <!-- Card 6: White Label -->
+            <div class="feature-card">
+                <div class="icon-container">
+                    <img src="{% static 'icons/settings.png' %}" alt="White Label Icon">
+                </div>
+                <h3>White Label</h3>
+                <p>Our white label solution lets you customize the platform with your name, logo, colors, custom widgets, and much more.</p>
+            </div>
+        </div>
+        <br>
+        <a href="#get-started" class="cta-button">Get Started</a><br><br>
+    </section>
+    
+
+    <!-- Testimonials Section -->
+    <section id="testimonials" class="testimonials">
+        <h2>What Our Users Say</h2>
+        <blockquote>
+            <p>"This platform has transformed my social media strategy!"</p>
+            <p class="rating-value">Rated {{ rating }}/5</p> <!-- Dynamic rating -->
+            <div class="star-rating">
+                <span class="star">&#9733;</span>
+                <span class="star">&#9733;</span>
+                <span class="star">&#9733;</span>
+                <span class="star">&#9733;</span>
+                <span class="star">&#9733;</span>
+            </div>
+            <footer>- Happy User</footer>
+        </blockquote>
+    </section>
+    
+
+    <!-- Call-to-Action Section -->
+    <section id="get-started" class="cta">
+        <h2>Ready to Get Started?</h2>
+        <a href="#" class="cta-button">Sign Up Today</a>
+    </section>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            const stars = document.querySelectorAll(".star-rating .star");
+            stars.forEach((star, index) => {
+                star.addEventListener("click", () => {
+                    // Reset the color of all stars
+                    stars.forEach(s => s.style.color = "#ddd");
+                    // Color up to the clicked star
+                    for (let i = 0; i <= index; i++) {
+                        stars[i].style.color = "#FFD700";
+                    }
+                });
+            });
+        });
+        </script>
+        
+</body>
+</html>

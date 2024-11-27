@@ -1,0 +1,5 @@
+<form method="post" action="{% url 'extract_keywordss' %}">
+    {% csrf_token %}
+    <textarea name="text" rows="10" cols="30" placeholder="Enter text for keyword extraction..."></textarea><br>
+    <button type="submit">Extract Keywords</button>
+</form>
