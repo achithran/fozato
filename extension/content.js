@@ -35,11 +35,175 @@ window.addEventListener("load", () => {
         
       });
     }
+
+    const targetDiv = document.querySelector('div[class="buttons style-scope ytcp-video-details-section"]');
+    if (targetDiv) {
+        clearInterval(intervalId); // Stop interval once the div is found
+        console.log("div found");
+
+        // Check if the button already exists to prevent duplicates
+        if (!document.getElementById("custom-action-button")) {
+            // Create the button
+            const button = document.createElement("button");
+            button.id = "custom-action-button";
+            button.textContent = "Lightning SEO";
+            button.style.cssText = `
+                padding: 10px 20px;
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 5px;
+                cursor: pointer;
+                font-size: 14px;
+            `;
+            
+            // Add event listener to the button
+            button.addEventListener("click", () => {
+                console.log("Custom button clicked!");
+                showLoginPopup(); // Trigger your custom login popup function
+            });
+
+            // Append the button to the target div
+            targetDiv.appendChild(button);
+            console.log("Custom button added to the target div.");
+        }
+    }
   }, 100); // Check every 100ms
+
+  // MutationObserver to re-add the Lightning SEO button when navigating or content changes
+  const observer = new MutationObserver(() => {
+    const targetDiv = document.querySelector('div[class="buttons style-scope ytcp-video-details-section"]');
+    if (targetDiv && !document.getElementById("custom-action-button")) {
+      // Create and append the button again
+      const button = document.createElement("button");
+      button.id = "custom-action-button";
+      button.textContent = "Lightning SEO";
+      button.style.cssText = `
+          padding: 10px 20px;
+          background-color: #4CAF50;
+          color: white;
+          border: none;
+          border-radius: 5px;
+          cursor: pointer;
+          font-size: 14px;
+      `;
+      
+      // Add event listener to the button
+      button.addEventListener("click", () => {
+          console.log("Custom button clicked!");
+          showLoginPopup(); // Trigger your custom login popup function
+      });
+
+      // Append the button to the target div
+      targetDiv.appendChild(button);
+      console.log("Custom button added to the target div.");
+    }
+  });
+
+  // Start observing for changes in the DOM
+  observer.observe(document.body, { childList: true, subtree: true });
 });
 
 // Wait until the DOM is fully loaded
 
+// Function to show the login popup
+function showLoginPopup() {
+  // Create the modal overlay
+  const overlay = document.createElement("div");
+  overlay.id = "popup-overlay";
+  overlay.style.cssText = `
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+  `;
+
+  // Create the popup container
+  const popup = document.createElement("div");
+  popup.id = "login-popup";
+  popup.style.cssText = `
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      width: 300px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      position: relative; /* For positioning the close button */
+  `;
+
+  // Create the close icon (×)
+  const closeIcon = document.createElement("span");
+  closeIcon.textContent = "×";
+  closeIcon.id = "close-icon";
+  closeIcon.style.cssText = `
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      font-size: 24px;
+      cursor: pointer;
+      color: #888;
+  `;
+
+  // Add event listener to close the popup when the close icon is clicked
+  closeIcon.addEventListener("click", () => {
+      closePopup(); // Close the popup
+  });
+
+  // Add the close icon to the popup
+  popup.appendChild(closeIcon);
+
+  // Add message to the popup
+  const message = document.createElement("p");
+  message.textContent = "You need to login first";
+  popup.appendChild(message);
+  message.style.cssText = `
+  font-size:17px;
+  `;
+
+  // Create the login button
+  const loginButton = document.createElement("button");
+  loginButton.textContent = "Login";
+  loginButton.style.cssText = `
+      margin-top: 20px;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+  `;
+
+  // Add event listener for the login button
+  loginButton.addEventListener("click", () => {
+      console.log("Login button clicked!");
+      // Redirect to the specified URL
+    window.location.href = "http://127.0.0.1:8000/extractionapp/home/";
+      closePopup(); // Close the popup after login attempt
+  });
+
+  // Append the login button to the popup
+  popup.appendChild(loginButton);
+
+  // Append the popup to the overlay
+  overlay.appendChild(popup);
+
+  // Append the overlay to the body
+  document.body.appendChild(overlay);
+}
+
+// Function to close the popup
+function closePopup() {
+  const overlay = document.getElementById("popup-overlay");
+  if (overlay) {
+      overlay.remove(); // Remove the overlay and popup from the DOM
+  }
+}
   
 // Function to show the popup
 function showPopup() {

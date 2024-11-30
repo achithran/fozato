@@ -126,7 +126,7 @@
 <div class="container">
     <h2 class="form-title">Enter phone number to proceed</h2>
 
-    <form id="phoneForm" action="{% url 'onboarding' %}" method="post">
+    <form id="phoneForm" action="{% url 'save_mobile' %}" method="post">
         {% csrf_token %}
         <div class="mb-3">
             <div class="input-group">
@@ -139,15 +139,19 @@
                     <div class="dropdown-menu" id="countryDropdown">
                         <div class="dropdown-item" data-value="+1" data-label="USA" data-flag="fi-us">
                             <span class="fi fi-us"></span> +1 (USA)
+                            <input type="hidden" name="country_code"  value="+1">
                         </div>
                         <div class="dropdown-item" data-value="+91" data-label="India" data-flag="fi-in">
                             <span class="fi fi-in"></span> +91 (India)
+                            <input type="hidden" name="country_code"  value="+91">
                         </div>
                         <div class="dropdown-item" data-value="+44" data-label="UK" data-flag="fi-gb">
                             <span class="fi fi-gb"></span> +44 (UK)
+                            <input type="hidden" name="country_code"  value="+44">
                         </div>
                         <div class="dropdown-item" data-value="+61" data-label="Australia" data-flag="fi-au">
                             <span class="fi fi-au"></span> +61 (Australia)
+                            <input type="hidden" name="country_code"  value="+61">
                         </div>
                     </div>
                 </div>

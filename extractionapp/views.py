@@ -75,6 +75,9 @@ from io import BytesIO
 from PIL import Image
 import uuid
 
+# free trial
+from django.utils import timezone
+from datetime import timedelta
 
 # Import your Scrapy spider
 # from fozato_scrapy_project.spiders.youtube_tags import YouTubeTagsSpider
@@ -181,6 +184,8 @@ def affiliate_dashboard(request):
     return render(request,'dashboard.html')   
 def mobilenumber(request):
     return render(request,'mobilenumber.html')     
+def user_dashboard(request):
+    return render(request,'user_dashboard.html')
 class YouTubeVideo:
     def __init__(self, url):
         self.url = url
@@ -1819,10 +1824,11 @@ def callback(request):
             # Optionally update existing user details if needed
             existing_user.username = username
             existing_user.channel_name = channel_name
+            existing_user.trial_status = 'Active' 
             existing_user.save()
         else:
             # Create a new user if not exists
-            YouTubeUser.objects.create(username=username, channel_name=channel_name, email=email)
+            YouTubeUser.objects.create(username=username, channel_name=channel_name, email=email,free_trial_start_date=timezone.now(),trial_status='Active'  )
        
 
         # Clear sensitive session data
@@ -1839,6 +1845,46 @@ def callback(request):
         # Log the error
         print(f"Error: {str(e)}")
         return JsonResponse({"error": str(e)}, status=500)
+    
+ 
+    
+def check_trial_status(user):
+    # Check if free trial has expired
+    if user.free_trial_start_date:
+        trial_end_date = user.free_trial_start_date + timedelta(days=7)
+        if timezone.now() > trial_end_date:
+            # Mark trial as expired
+            user.trial_status = 'Expired'
+            user.save()
+            print(f"Trial expired for {user.username}.")
+        else:
+            print(f"Trial still active for {user.username}.")    
+
+
+
+
+def save_mobile(request):
+    if request.method == 'POST':
+        phone = request.POST.get('phone')  # Get the phone number from the form
+        country_code = request.POST.get('country_code')  # Get the country code
+        full_phone_number = f"{country_code} {phone}"  # Combine country code and phone number
+
+        # Assuming the user is logged in and has an associated YouTubeUser
+        # user = request.user  # If you have a logged-in user, use that. Modify if using a different user logic.
+         # Get email from the session
+        email = request.session.get('email')
+
+        if not email:
+            return redirect('error_page') 
+        # Update the YouTubeUser model with the new mobile number
+        youtube_user = YouTubeUser.objects.filter(email=email).first()
+        if youtube_user:
+            youtube_user.mobile_number = full_phone_number
+            youtube_user.save()
+
+        return redirect('onboarding')  # Redirect to the onboarding page or wherever you need
+    return redirect('error_page')  # In case the request is not POST
+             
 
     
 def onboarding(request):
@@ -1861,6 +1907,12 @@ def onboarding_action(request):
 
         if not channel_name or not email:
             return JsonResponse({"error": "User information missing."}, status=400)
+        
+        # Update the YouTubeUser model with the new mobile number
+        youtube_user = YouTubeUser.objects.filter(email=email).first()
+        if youtube_user:
+            youtube_user.role = role
+            youtube_user.save()
         
         # Save to the database
         user, created = UserRole.objects.get_or_create(
@@ -1895,11 +1947,11 @@ def save_goal_data(request):
         email = request.session.get('email')
         role = request.session.get('role')
 
-        # Debug: Print session data to confirm they are set
-        print("Goal:", goal)
-        print("Channel Name:", channel_name)
-        print("Email:", email)
-        print("Role:", role)
+        youtube_user = YouTubeUser.objects.filter(email=email).first()
+        if youtube_user:
+            youtube_user.goal = goal
+            youtube_user.save()
+        
 
 
         if not all([goal, channel_name, email, role]):
@@ -1935,13 +1987,10 @@ def save_discovery_data(request):
         role = request.session.get('role')
         goal = request.session.get('goal')
 
-        # Debug: Print session data to confirm they are set
-        print("Goal:", goal)
-        print("Channel Name:", channel_name)
-        print("Email:", email)
-        print("Role:", role)
-        print("Discovery:",discovery)
-
+        youtube_user = YouTubeUser.objects.filter(email=email).first()
+        if youtube_user:
+            youtube_user.discovery = discovery
+            youtube_user.save()
 
         if not all([goal, channel_name, email, role,discovery]):
             return JsonResponse({"error": "Incomplete data."}, status=400)

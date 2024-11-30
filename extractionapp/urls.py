@@ -17,6 +17,7 @@ urlpatterns = [
     path("auth/youtube_affiliated/<int:contact_id>/", views.youtube_authenticate_for_affiliated, name="youtube_authenticate"),
     path("auth/youtube/", views.youtube_authenticate, name="youtube_authenticate"),
     path("auth/callback", views.callback, name="callback"),
+    path("save_mobile/",views.save_mobile,name="save_mobile"),
     path('onboarding/', views.onboarding, name='onboarding'),
     path('onboarding-action/', views.onboarding_action, name='onboarding_action'),
     path('goal_selection/',views.goal_selection,name='goal_selection'),
@@ -35,6 +36,7 @@ urlpatterns = [
     path('get_related_keywords_trends/',views.get_related_keywords_trends,name='get_related_keywords_trends'),
     path('extraction_from_text_api/',views.extraction_from_text_api,name='extraction_from_text_api'),
     path('extraction_from_url_using_scrapy/',views.extraction_from_url_using_scrapy,name='extraction_from_url_using_scrapy'),
-    path('extraction_from_url_api/',views.extraction_from_url_api,name='extraction_from_url_api')
+    path('extraction_from_url_api/',views.extraction_from_url_api,name='extraction_from_url_api'),
+    path('user_dashboard/',views.user_dashboard,name='user_dashboard')
 
 ]

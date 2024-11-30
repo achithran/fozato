@@ -44,6 +44,13 @@ class YouTubeUser(models.Model):
     channel_name = models.CharField(max_length=255)
     email = models.EmailField(unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    mobile_number = models.CharField(max_length=20, blank=True, null=True) 
+    role = models.CharField(max_length=50,null=True, blank=True)
+    goal = models.CharField(max_length=100,null=True, blank=True) 
+    discovery=models.CharField(max_length=100,null=True, blank=True)
+    free_trial_start_date = models.DateTimeField(null=True, blank=True)
+    trial_status = models.CharField(max_length=20, default='Active', choices=[('Active', 'Active'), ('Expired', 'Expired')])
+
 
     def __str__(self):
         return f"{self.username} ({self.channel_name})"
