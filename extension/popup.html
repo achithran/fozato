@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>YouTube URL Popup</title>
+  <style>
+    /* Ensure the popup takes up the entire area and centers the content */
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 400px; /* Adjusted height for image options */
+      width: 350px; /* Adjust width */
+      margin: 0;
+      background-color: #000; /* Black background */
+      color: #fff; /* White text color for better contrast */
+    }
+
+    /* Popup content styling */
+    .popup-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 100%;
+      padding: 20px;
+      box-sizing: border-box;
+      background-color: #333; /* Dark gray background */
+      border-radius: 8px;
+      box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.3);
+    }
+
+    /* SEO Toggle container styling */
+    .toggle-container {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    .toggle-label {
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 50px;
+      height: 24px;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: #ccc;
+      border-radius: 24px;
+      cursor: pointer;
+      transition: 0.4s;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background-color: white;
+      border-radius: 50%;
+      transition: 0.4s;
+    }
+
+    input:checked + .slider {
+      background-color: #4CAF50;
+    }
+
+    input:checked + .slider:before {
+      transform: translateX(26px);
+    }
+
+    /* Options Section */
+    .options-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .option {
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .option img {
+      width: 70px;
+      height: 70px;
+      object-fit: contain;
+      border-radius: 8px;
+      box-shadow: 0px 0px 5px rgba(255, 255, 255, 0.2);
+      transition: transform 0.3s, box-shadow 0.3s;
+    }
+
+    .option img:hover {
+      transform: scale(1.1);
+      box-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+    }
+
+    .option-title {
+      font-size: 14px;
+      margin-top: 5px;
+      font-weight: bold;
+    }
+
+    /* Styling input and buttons */
+    input, button {
+      width: 100%;
+      padding: 10px;
+      margin: 10px 0;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+
+    input {
+      background-color: #555;
+      color: #fff;
+    }
+
+    #submit-btn {
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+
+    #close-btn {
+      background-color: #f44336; /* Red color for close button */
+      color: white;
+      cursor: pointer;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+  </style>
+</head>
+<body>
+  <div class="popup-container">
+    <!-- SEO Toggle -->
+    <div class="toggle-container">
+      <span class="toggle-label">Upload Popup</span>
+      <label class="toggle-switch">
+        <input type="checkbox" id="seo-toggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <!-- Options with Images -->
+    <div class="options-container">
+      <div class="option" id="video-to-seo">
+        <img src="seo.png" alt="Video to SEO">
+        <div class="option-title">Video to SEO</div>
+      </div>
+      <div class="option" id="url-to-seo">
+        <img src="seo.png" alt="URL to SEO">
+        <div class="option-title">URL to SEO</div>
+      </div>
+      <div class="option" id="keyword-to-seo">
+        <img src="seo.png" alt="Keyword to SEO">
+        <div class="option-title">Keyword to SEO</div>
+      </div>
+    </div>
+
+    <!-- URL Input Section -->
+    <!-- <h2>Enter YouTube URL</h2>
+    <input type="text" id="youtube-url" placeholder="Enter YouTube URL"> -->
+   
+    <button id="close-btn">Close</button>
+  </div>
+  <script src="popup.js"></script>
+ 
+</body>
+</html>

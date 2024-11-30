@@ -29,4 +29,9 @@ USERINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v1/userinfo"
 
 PYTRENDS_DEFAULT_REGION = 'US'  # Default region for Google Trends
 
+STABLEDIFFUSION_API_CONFIG = {
+    'api_key':'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',
+    'url':'https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large'
+}
+
 

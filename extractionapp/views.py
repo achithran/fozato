@@ -1,7 +1,7 @@
 from django.shortcuts import render
 from django.core.cache import cache
 import requests
-from .config import API_CONFIG, WHISPER_API_CONFIG,GROK_API_CONFIG,RAZORPAY_API_KEY, RAZORPAY_API_SECRET,DATAMUSE_API_URL, DATAMUSE_RELATED_URL,KEYWORD_API_BASE_URL,USERINFO_ENDPOINT,PYTRENDS_DEFAULT_REGION
+from .config import API_CONFIG, WHISPER_API_CONFIG,GROK_API_CONFIG,RAZORPAY_API_KEY, RAZORPAY_API_SECRET,DATAMUSE_API_URL, DATAMUSE_RELATED_URL,KEYWORD_API_BASE_URL,USERINFO_ENDPOINT,STABLEDIFFUSION_API_CONFIG
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from urllib.parse import urlparse, parse_qs
@@ -25,6 +25,7 @@ import string
 from sklearn.feature_extraction.text import CountVectorizer
 
 from transformers import AutoModelForCausalLM, AutoTokenizer,pipeline
+import transformers
 
 import torch
 
@@ -68,6 +69,11 @@ from parsel import Selector
 import urllib.parse
 
 from youtubesearchpython import VideosSearch
+
+import base64
+from io import BytesIO
+from PIL import Image
+import uuid
 
 
 # Import your Scrapy spider
@@ -172,7 +178,7 @@ def samplepage(request):
 def checkout(request):
     return render(request,'checkout.html')
 def affiliate_dashboard(request):
-    return render(request,'affiliate_dashboard.html')   
+    return render(request,'dashboard.html')   
 def mobilenumber(request):
     return render(request,'mobilenumber.html')     
 class YouTubeVideo:
@@ -264,7 +270,7 @@ class YouTubeVideo:
 
 
     @staticmethod
-    def extract_seo_keywords(text):
+    def extract_seo_keywords_secondlast(text):
         try:
             print("TEXT............:",text)
             # Load the model and tokenizer
@@ -303,8 +309,39 @@ class YouTubeVideo:
             print("Error:", e)
             return []
 
+
     @staticmethod
-    def extract_seo_keywords__oldone(transcription):
+    def extract_seo_keywords(transcription):
+        # Use a correct or available LLaMA model
+        model_name = "facebook/llama-2-7b-chat"  # Replace with the correct model
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        model = AutoModelForCausalLM.from_pretrained(model_name)
+        
+        # Create the prompt for extracting SEO keywords
+        prompt = f"Extract the main SEO keywords from the following transcription:\n\n{transcription}\n\nKeywords:"
+
+        # Tokenize the input prompt
+        inputs = tokenizer(prompt, return_tensors="pt")
+
+        # Generate the response from the model
+        with torch.no_grad():
+            outputs = model.generate(**inputs, max_length=100)
+
+        # Decode the generated output
+        keywords_text = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+        # Post-process the response to extract keywords
+        keywords = []
+        if 'Keywords:' in keywords_text:
+            # Extracting the portion after 'Keywords:'
+            keywords_section = keywords_text.split('Keywords:')[1]
+            # Assuming the keywords are comma-separated (this can be adjusted based on model output)
+            keywords = [keyword.strip() for keyword in keywords_section.split(',') if keyword.strip()]
+        
+        return keywords
+    
+    @staticmethod
+    def extract_seo_keywords_nvidialama(transcription):
         # Load the LLaMA model and tokenizer
         model_name = "nvidia/llama-3-1-405b-instruct"  # Replace with the specific model you are using
         tokenizer = AutoTokenizer.from_pretrained(model_name)
@@ -919,7 +956,145 @@ class YouTubeVideo:
             print(f"Error: {e}")
             return []
 
-    
+    @staticmethod
+    def generate_thumbnails_from_stable_diffusion_old(keyword):
+        api_url = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-3.5-large"
+        
+        # Ensure you replace 'YOUR_API_KEY' with your actual API key
+        api_key = "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"
+        
+        # Prepare the payload
+        payload = json.dumps({
+            "key": api_key,
+            "prompt": keyword,  # Use the keyword as the prompt
+            "negative_prompt": "",  # Set this to an empty string if not using negative prompts
+            "width": 512,  # Set width for the generated thumbnails
+            "height": 512,  # Set height for the generated thumbnails
+            "samples": 5,  # Number of images (thumbnails) to generate
+            "num_inference_steps": 20,  # Number of inference steps
+            "seed": None,  # Optional: Set a seed for reproducibility (or None for random)
+            "guidance_scale": 7.5,  # Adjust the scale as necessary
+            "safety_checker": "yes",  # Safety filter for the generated images
+            "multi_lingual": "no",  # If the API supports multilingual inputs, change accordingly
+            "panorama": "no",  # Set to 'yes' for panoramic images
+            "self_attention": "no",  # Self-attention parameter (optional)
+            "upscale": "no",  # Set to 'yes' if you want upscaled images
+            "embeddings_model": None,  # Optional: Specify an embeddings model if needed
+            "webhook": None,  # Optional: If you need a webhook for notifications
+            "track_id": None  # Optional: You can specify a tracking ID for the request
+        })
+        
+        # Set the request headers
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        
+        # Make the POST request to the API
+        response = requests.post(api_url, headers=headers, data=payload)
+        
+        # Check if the request was successful
+        if response.status_code == 200:
+            data = response.json()  # Parse the response as JSON
+            thumbnails = data.get("images", [])  # Extract the images from the response
+            
+            if thumbnails:
+                print("Thumbnails generated successfully.")
+                return thumbnails  # Return the list of generated thumbnails
+            else:
+                print("No images returned in the response.")
+                return []  # Return an empty list if no images are returned
+        else:
+            # Log an error if the request failed
+            print(f"Failed to generate thumbnails: {response.status_code}")
+            print(response.text)  # Print the error message from the API
+            return []  # Return an empty list if failed
+
+    @staticmethod
+    def generate_thumbnails_from_stable_diffusion(text_prompt, num_images=5):
+        print("Text prompt....:", text_prompt)
+        
+        # Stable Diffusion API URL on Hugging Face
+        stable_diffusion_url = STABLEDIFFUSION_API_CONFIG['url']
+
+        headers = {
+            "Authorization": f"Bearer {STABLEDIFFUSION_API_CONFIG['api_key']}"  # Your Hugging Face API token
+        }
+        thumbnails = []
+        save_directory = "media/thumbnails/"
+        
+        # Ensure the save directory exists
+        os.makedirs(save_directory, exist_ok=True)
+
+        # Loop to generate the specified number of images
+        
+        for i in range(num_images):
+            varied_prompt = f"{text_prompt} - version {i+1}"
+            data = {
+                "inputs": varied_prompt,
+                "options": {"wait_for_model": True},
+            }
+
+            # Make the API call to generate the image
+            response = requests.post(stable_diffusion_url, headers=headers, json=data)
+
+            # Debugging: Print out the response status code
+            print(f"Response Status Code: {response.status_code}")
+
+            # Check if response is JSON or binary
+            content_type = response.headers.get('Content-Type', '')
+            print("Content-Type:", content_type)
+
+            if response.status_code == 200:
+                if 'application/json' in content_type:
+                    try:
+                        response_data = response.json()  # Parse as JSON
+                        print("API Response (JSON):", response_data)  # Print the entire JSON response
+
+                        # Handle the response as JSON with 'generated_images'
+                        if 'generated_images' in response_data:
+                            image_data = response_data['generated_images'][0]  # First image
+
+                            # Base64 encoded image handling
+                            if image_data.startswith("data:image"):
+                                image_base64 = image_data.split(",")[1]  # Extract base64 string
+                                image_bytes = base64.b64decode(image_base64)
+                                image = Image.open(BytesIO(image_bytes))
+
+                                # Save the image and append the path to thumbnails list
+                                thumbnail_path = os.path.join(save_directory, f"{uuid.uuid4()}.png")
+                                image.save(thumbnail_path)
+                                thumbnails.append(thumbnail_path)
+                            else:
+                                print("Received image URL:", image_data)
+                                thumbnails.append(image_data)  # Append image URL if available
+                        
+                        else:
+                            print("Error: No 'generated_images' field found in response.")
+                    
+                    except Exception as e:
+                        print(f"Error parsing JSON response: {e}")
+                elif 'image' in content_type:
+                    # Handle binary image data
+                    try:
+                        image = Image.open(BytesIO(response.content))
+                        thumbnail_path = os.path.join(save_directory, f"{uuid.uuid4()}.png")
+                        image.save(thumbnail_path)
+                        print(f"Thumbnail saved to: {thumbnail_path}")
+                        thumbnails.append(thumbnail_path)
+                    except Exception as e:
+                        print(f"Error processing binary image data: {e}")
+                else:
+                    print("Unexpected content type:", content_type)
+
+            elif response.status_code == 429:
+                print("Rate limit reached; waiting to retry...")
+                time.sleep(60)  # Wait a minute before retrying        
+            else:
+                print(f"API request failed with status code {response.status_code}")
+                print(f"Error Response: {response.text}")
+        
+        # Return the list of all generated thumbnails after the loop completes
+        return thumbnails
         
 
 
@@ -1055,12 +1230,16 @@ def extraction_from_video(request):
             title = existing_video_file.title
             description = existing_video_file.description
             tags = existing_video_file.tags
+            thumbnails = YouTubeVideo.generate_thumbnails_from_stable_diffusion(keywords[0])
+            
            
 
             return render(request, 'seo_results.html', {
                 'title': title,
                 'description': description,
                 'tags': tags,
+                
+                
               
             })
         else:
@@ -1214,9 +1393,12 @@ def extraction_from_text_api(request):
         for key in suggestions:
             for suggestion in suggestions[key]:
                 keywords.append(suggestion[0])
-        print("keywords:",keywords)        
+        print("keywords:",keywords)  
+
+         # Call the Stable Diffusion API to generate thumbnails based on the keyword
+        thumbnails = YouTubeVideo.generate_thumbnails_from_stable_diffusion(keywords[0])  # Pass the first keyword      
      
-        return JsonResponse({"keywords":keywords})
+        return JsonResponse({"keywords":keywords, "thumbnails": thumbnails})
         
         # # OR render the results in a template (if you're using Django templates)
         # return render(request, 'seo_results.html', {'suggestions': suggestions})
@@ -1909,3 +2091,41 @@ def save_payment_details(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+# model_id = "nvidia/Llama-3_1-Nemotron-51B-Instruct"
+# model_kwargs = {"torch_dtype": torch.bfloat16, "trust_remote_code": True, "device_map": "auto"}
+# tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
+# tokenizer.pad_token_id = tokenizer.eos_token_id
+
+# pipeline = transformers.pipeline(
+#     "text-generation", 
+#     model=model_id, 
+#     tokenizer=tokenizer, 
+#     max_new_tokens=20, 
+#     **model_kwargs
+# )
+# print(pipeline([{"role": "user", "content": "SEO keywords for python tutorial"}]))
+
+
+
+
+
+# API_URL = "https://api-inference.huggingface.co/models/facebook/llama-13b"
+# API_URL = "https://api-inference.huggingface.co/models/gpt2"
+# headers = {"Authorization": "Bearer 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"}
+
+
+# def query(payload):
+#     try:
+#         response = requests.post(API_URL, headers=headers, json=payload)
+#         response.raise_for_status()
+#         return response.json()
+#     except requests.exceptions.RequestException as e:
+#         print(f"Request failed: {e}")
+#         return None
+
+# # Example usage
+# result = query({"inputs": "What is Llama?"})
+# if result:
+#     print(result)
+# else:
+#     print("Failed to retrieve a response.")
