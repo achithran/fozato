@@ -4,4 +4,8 @@ extractenv/Lib/site-packages/llvmlite/binding/*.dll
 extractenv/Lib/site-packages/torch/lib/*.dll
 extractenv/Lib/site-packages/torch/lib/*.lib
 media/uploads/*.wav
+# Ignore all media files and directories
+media/media/videos/
+media/uploads
+*.mp4
 
