@@ -223,7 +223,7 @@ function showPopup() {
           <p>Your videos will be private until you publish them.</p>
         </div>
         <input type="file" id="file-upload" accept="video/*">
-        <input type="text" placeholder="Enter Keyword">
+       
         <button id="submit-btn">Submit File</button>
         <div id="upload-spinner" class="spinner" style="display: none;"></div> <!-- Spinner for upload -->
       </div>
@@ -386,13 +386,85 @@ function showPopup() {
 });
 }
 
-// Function to upload file and get the generated title from the server
+
 function uploadFile(file) {
+  const formData = new FormData();
+  formData.append("video_file", file);
+
+  const xhr = new XMLHttpRequest();
+  xhr.open("POST", "http://127.0.0.1:8000/extraction_from_video/");
+
+  xhr.onload = () => {
+    // Ensure only a valid response triggers the success logic
+
+    if (xhr.status === 200) {
+        try {
+            const response = JSON.parse(xhr.responseText);
+            console.log("Raw response text:", xhr.responseText);
+            console.log("Response from server:", response);
+
+            // Access the 'scrapy_result' from the server response
+            if (response.api_result && response.api_result.length > 0) {
+              console.log("API Result Keywords:", response.api_result);
+              alert("Keywords generated successfully!");
+          } else {
+              console.warn("No keywords generated in API result.");
+              alert("No keywords were generated.");
+          }
+            if (response) {
+                console.log("trends_result:", response.trends_result);
+                console.log("scrapy result:",response.scrapy_result)
+                console.log("api result:",response.api_result)
+                alert("Keywords generated successfully!");
+                hideSEOProcessingPopup(); // Hide the popup after success
+                hideshowPopup();       // Remove the popup after success
+            } else {
+                alert("No keywords were generated.");
+                hideSEOProcessingPopup(); // Hide the popup if no keywords
+                // hideshowPopup1();       // Remove the popup if no keywords
+                showEnterKeywordPopup();
+            }
+        } catch (e) {
+            console.error("Error parsing server response:", e.message);
+            alert("An error occurred while processing the response.");
+            hideSEOProcessingPopup(); // Hide the popup after error
+            // hideshowPopup1();        // Remove the popup after error
+            showEnterKeywordPopup();
+        }
+    } else {
+        // If status is not 200, safely assign a response object
+        response = { error: "Transcription Failed" };
+        alert(response.error || "Transcription Failed");
+        hideSEOProcessingPopup();
+         // Show the "Enter Keyword" popup
+         showEnterKeywordPopup();
+         const dialog = document.querySelector('ytcp-uploads-dialog');
+         console.log(dialog)
+         if (dialog) {
+           dialog.style.display = 'none'; // Hides the dialog
+           console.log("Dialog hidden.");
+         }
+    }
+};
+
+xhr.onerror = () => {
+    console.error("Network error occurred.");
+    alert("A network error occurred. Please check your connection and try again.");
+    hideSEOProcessingPopup(); // Hide the popup on network error
+};
+
+
+  xhr.send(formData);
+}
+
+
+// Function to upload file and get the generated title from the server
+function uploadFile_old(file) {
   const formData = new FormData();
   formData.append("file", file);
 
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", "http://127.0.0.1:8000/sampleapp/youtube-url/");
+  xhr.open("POST", "http://127.0.0.1:8000/extraction_from_video/");
 
   // Define response outside of the async blocks
   let response = null;
@@ -407,11 +479,11 @@ function uploadFile(file) {
           try {
               response = JSON.parse(xhr.responseText);  // Safely parse the response
               print("response:",response)
-              generatedTitle = response.title; // Store the title globally
-              generatedDescription = response.description; // Store the description globally
-              console.log("GENERATED TITLE:", generatedTitle);
-              console.log("GENERATED DESCRIPTION:", generatedDescription);
-              alert(response.message); // Display success message
+              // generatedTitle = response.title; // Store the title globally
+              // generatedDescription = response.description; // Store the description globally
+              // console.log("GENERATED TITLE:", generatedTitle);
+              // console.log("GENERATED DESCRIPTION:", generatedDescription);
+              alert(response.api_result); // Display success message
               hideSEOProcessingPopup();
               hideshowPopup();
               
@@ -467,7 +539,7 @@ function showEnterKeywordPopup() {
   <div id="div-popup-keyword">
     <div class="popup-header">
       <h2>We'll Generate SEO Keywords for You</h2>
-      <div id="close-btn">&#10005;</div> <!-- Close icon -->
+      <div id="close-btn2">&#10005;</div> <!-- Close icon -->
     </div>
     <div class="upload-area">
      
@@ -621,9 +693,11 @@ textarea{
 document.head.appendChild(style);
 document.body.appendChild(overlay);
 
-document.getElementById("close-btn").addEventListener("click", () => {
+document.getElementById("close-btn2").addEventListener("click", () => {
 
   overlay.remove();
+  hideshowPopup();
+  hideSEOProcessingPopup();
 
  
 });
@@ -649,7 +723,7 @@ function uploadkeyword(keyword) {
   formData.append("text", keyword);
 
   const xhr = new XMLHttpRequest();
-  xhr.open("POST", "http://127.0.0.1:9000/extractionapp/extraction_from_text_api/");
+  xhr.open("POST", "http://127.0.0.1:8000/extraction_from_text/");
 
   // Define response outside of the async blocks
   let response = null;
@@ -666,6 +740,7 @@ function uploadkeyword(keyword) {
               alert("Got response successfully")
               hideSEOProcessingPopup();
               hideshowEnterKeywordPopup();
+              hideshowPopup();
               const dialog = document.querySelector('ytcp-uploads-dialog');
               console.log(dialog)
               if (dialog) {
@@ -773,6 +848,16 @@ function hideSEOProcessingPopup() {
         seoPopup.remove();
         console.log("SEO Processing popup hidden"); // Debugging statement
     }
+}
+
+
+
+function hideshowPopup1() {
+  const seoPopup = document.getElementById("showPopup");
+  if (seoPopup) {
+      seoPopup.remove();
+      console.log("showPopup hidden"); // Debugging statement
+  }
 }
 function hideshowEnterKeywordPopup(){
   const seoPopup = document.getElementById("youtube-popup-Keyword");

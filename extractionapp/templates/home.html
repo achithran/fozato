@@ -17,11 +17,15 @@
             </a>
         </div>
         <nav class="nav-links">
-            <a href="#features">Features</a>
-            <a href="#testimonials">Testimonials</a>
-            <a href="#get-started">Get Started</a>
+            <a href="#features">Login</a>
+            <a href="#testimonials">Pricing</a>
+            <a href="#get-started">Contact</a>
+            <a href="#get-started">About</a>
         </nav>
-        <a href="#" class="cta-button">Sign In</a>
+        <div>
+        <a href="{% url 'youtube_authenticate' %}" class="cta-button">Get Started</a>
+        <a href="#" class="cta-button">Login</a>
+    </div>
     </header>
 
     <!-- Hero Section -->
@@ -29,7 +33,7 @@
         <h1>Grow Your Audience with Fozato</h1>
         <p>Automate your content and increase engagement effortlessly.</p><br>
         <a href="{% url 'youtube_authenticate' %}" class="cta-button">Get Started</a>
-        <a href="{% url 'youtube_authenticate' %}" class="cta-button">Free Trial</a>
+        <!-- <a href="{% url 'youtube_authenticate' %}" class="cta-button">Free Trial</a> -->
         <br><br>
         <div class="star-rating">
             <span class="star">&#9733;</span>
@@ -122,10 +126,28 @@
     
 
     <!-- Call-to-Action Section -->
-    <section id="get-started" class="cta">
+    <!-- <section id="get-started" class="cta">
         <h2>Ready to Get Started?</h2>
         <a href="#" class="cta-button">Sign Up Today</a>
-    </section>
+    </section> -->
+
+    <!-- Footer Section -->
+    <footer class="footer">
+        <div class="footer-content">
+            <p>&copy; 2024 Fozato. All Rights Reserved.</p>
+            <nav class="footer-links">
+                <a href="#features">Privacy Policy</a>
+                <a href="#testimonials">Terms and Conditions</a>
+                <a href="#get-started">Refund Policy</a>
+                <a href="#get-started">Shipping Policy</a>
+            </nav>
+            <!-- <div class="social-icons">
+                <a href="#" class="social-icon"><img src="{% static 'icons/facebook.png' %}" alt="Facebook"></a>
+                <a href="#" class="social-icon"><img src="{% static 'icons/twitter.png' %}" alt="Twitter"></a>
+                <a href="#" class="social-icon"><img src="{% static 'icons/instagram.png' %}" alt="Instagram"></a>
+            </div> -->
+        </div>
+    </footer>
 
     <script>
         document.addEventListener("DOMContentLoaded", function() {
@@ -142,6 +164,44 @@
             });
         });
         </script>
+        <style>
+            .footer {
+    background-color: #333;
+    color: #fff;
+    padding: 20px 0;
+    text-align: center;
+}
+
+.footer .footer-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+.footer .footer-links {
+    margin: 10px 0;
+}
+
+.footer .footer-links a {
+    color: #fff;
+    text-decoration: none;
+    margin: 0 15px;
+}
+
+.footer .social-icons {
+    margin-top: 10px;
+}
+
+.footer .social-icons a {
+    margin: 0 10px;
+}
+
+.footer .social-icons img {
+    width: 30px;
+    height: 30px;
+}
+
+        </style>
         
 </body>
 </html>

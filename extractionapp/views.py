@@ -79,6 +79,9 @@ import uuid
 from django.utils import timezone
 from datetime import timedelta
 
+import warnings
+from django.core.cache.backends.base import CacheKeyWarning
+
 # Import your Scrapy spider
 # from fozato_scrapy_project.spiders.youtube_tags import YouTubeTagsSpider
 
@@ -185,7 +188,391 @@ def affiliate_dashboard(request):
 def mobilenumber(request):
     return render(request,'mobilenumber.html')     
 def user_dashboard(request):
-    return render(request,'user_dashboard.html')
+    return render(request,'user_dashboard1.html')
+
+from django.http import JsonResponse
+from io import StringIO
+from urllib.parse import urlencode
+from django.core.management import call_command
+
+class FozatoDataExtractor:
+    def __init__(self, text):
+        self.text = text
+        self.keywords = []
+
+    def generate_keywords_from_google_trends(self):
+        """
+        Fetch related keywords using Google Trends and return them as JSON.
+        """
+        keywords_input = self.text
+        
+
+        try:
+            
+            # Split the keywords by commas and clean extra whitespace
+            main_keywords = [kw.strip() for kw in keywords_input.split(",") if kw.strip()]
+            
+            # Check if keywords are provided
+            if not main_keywords:
+                return JsonResponse({'status': 'error', 'message': 'No keywords provided.'}, status=400)
+            
+            # Initialize pytrends
+            pytrend = TrendReq(hl='en-US', tz=360)
+
+            # Dictionary to store related keywords
+            related_keywords = {}
+
+            for keyword in main_keywords:
+                # Get suggestions for the keyword
+                suggestions = pytrend.suggestions(keyword=keyword)
+                related_keywords[keyword] = [s["title"] for s in suggestions]  # Extract titles only
+
+            return JsonResponse({'status': 'success', 'data': related_keywords}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+    
+
+    def extraction_from_text_api(self):
+        """
+        Generate suggestions and thumbnails based on the input text.
+        """
+        text = self.text
+        if not text:
+            return JsonResponse({'error': 'No text provided'}, status=400)
+
+        try:
+            # Generate suggestions based on the text entered
+            suggestions = YouTubeVideo.generate_suggestions_for_prefixes(text)
+            keywords = [suggestion[0] for key in suggestions for suggestion in suggestions[key]]
+            print("api keywords:",keywords)
+
+            # Call the Stable Diffusion API to generate thumbnails
+            # thumbnails = YouTubeVideo.generate_thumbnails_from_stable_diffusion(keywords[0])
+
+            return JsonResponse({"keywords": keywords})
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)})
+
+    def extraction_from_text_trends(self):
+        """
+        Execute Scrapy spider for trend extraction.
+        """
+        text = self.text
+        if not text:
+            return JsonResponse({'error': 'No text provided'}, status=400)
+
+        try:
+            # Capture Scrapy output using StringIO
+            out = StringIO()
+            call_command('run_trends', stdout=out)
+            spider_output = out.getvalue()
+
+            return JsonResponse({'spider_output': spider_output.strip()})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+
+    def extraction_from_text_scrapy(self):
+        """
+        Extract YouTube video details and keywords using Scrapy.
+        """
+        text = self.text
+        if not text:
+            return JsonResponse({"error": "No text provided"}, status=400)
+
+        try:
+            # Generate YouTube search URL
+            query_params = {"search_query": text}
+            search_url = f"https://www.youtube.com/results?{urlencode(query_params)}"
+
+            # Fetch YouTube video URLs via helper function
+            video_urls = YouTubeVideo.get_youtube_video_urls(text)
+
+            if not video_urls:
+                return JsonResponse({"error": "No video URLs found for the given search text."}, status=404)
+
+            # Extract paths and filter valid video links
+            video_paths = [url.split("youtube.com")[-1] for url in video_urls]
+            full_video_urls = [
+                f"https://www.youtube.com{path}" for path in video_paths if "/watch?v=" in path
+            ]
+
+            if not full_video_urls:
+                return JsonResponse({"error": "No valid video paths found."}, status=404)
+
+            # Create an instance of YouTubeSpiderRunner for a single URL
+            spider_runner = YouTubeSpiderRunner()
+            result_using_scrapy = spider_runner.run_spider_for_multiple_urls(full_video_urls)
+
+            return JsonResponse(
+                {"message": "Scrapy spider ran successfully", "data": result_using_scrapy},
+                status=200
+            )
+
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+    def search_keywords_from_google_trends(self, keywords_input):
+        """
+        Fetch related keywords using Google Trends and return them as JSON.
+        """
+        try:
+            # Split the keywords by commas and clean extra whitespace
+            main_keywords = [kw.strip() for kw in keywords_input.split(",") if kw.strip()]
+            
+            # Check if keywords are provided
+            if not main_keywords:
+                return JsonResponse({'status': 'error', 'message': 'No valid keywords provided.'}, status=400)
+            
+            # Log the keywords for debugging
+            print("Keywords to fetch trends for:", main_keywords)
+            
+            # Initialize pytrends
+            pytrend = TrendReq(hl='en-US', tz=360)
+
+            # Dictionary to store related keywords
+            related_keywords = {}
+
+            for keyword in main_keywords:
+                try:
+                    # Get suggestions for the keyword
+                    suggestions = pytrend.suggestions(keyword=keyword)
+                    
+                    # If no suggestions are found, log it
+                    if not suggestions:
+                        print(f"No suggestions found for keyword: {keyword}")
+                    
+                    related_keywords[keyword] = [s["title"] for s in suggestions]  # Extract titles only
+
+                except Exception as e:
+                    print(f"Error fetching suggestions for {keyword}: {str(e)}")
+
+            return JsonResponse({'status': 'success', 'data': related_keywords}, status=200)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@csrf_exempt
+def extraction_from_text(request):
+    if request.method == "POST":
+        text = request.POST.get("text")
+        
+        if not text:
+            return JsonResponse({"error": "No text provided"}, status=400)
+
+        # Create an instance of the extractor with the provided text
+        kw_extractor = FozatoDataExtractor(text)
+        
+        # Call the extraction functions and capture their results
+        result_scrapy = kw_extractor.extraction_from_text_scrapy()
+        result_trends = kw_extractor.generate_keywords_from_google_trends()
+        result_api = kw_extractor.extraction_from_text_api()
+
+        # Extract the content of JsonResponse objects as JSON-compatible data
+        result_scrapy_data = json.loads(result_scrapy.content)
+        result_trends_data = json.loads(result_trends.content)
+        result_api_data = json.loads(result_api.content)
+
+        print("Scrapy result:", result_scrapy_data)
+        print("result_trends:", result_trends_data)
+        print("result_api:", result_api_data)
+
+        # Check if the trends extraction was successful based on the returned dictionary
+        if "error" in result_trends_data:
+            return JsonResponse({"error": "Trends extraction failed", "details": result_trends_data["error"]}, status=500)
+
+        # Concatenate and deduplicate results
+        all_keywords = []
+
+        # Collect keywords from Scrapy data if present
+        if "data" in result_scrapy_data and isinstance(result_scrapy_data["data"], list):
+            all_keywords.extend(result_scrapy_data["data"])
+
+        # Collect keywords from trends data if present
+        if "data" in result_trends_data and isinstance(result_trends_data["data"], dict):
+            for key, keywords in result_trends_data["data"].items():
+                all_keywords.extend(keywords)
+
+        # Collect keywords from API data if present
+        if "keywords" in result_api_data and isinstance(result_api_data["keywords"], list):
+            all_keywords.extend(result_api_data["keywords"])
+
+            print("All Keywords before deduplication:", all_keywords)
+    
+
+        # Remove duplicates while preserving order
+        unique_keywords = list(dict.fromkeys(
+            keyword if isinstance(keyword, str) else str(keyword) for keyword in all_keywords
+        ))
+
+        # Convert list into text
+        unique_keywords_text = ", ".join(unique_keywords)
+        # Assuming FozatoDataExtractor is a class, create an instance first
+        data_extractor = FozatoDataExtractor(unique_keywords_text)
+        print("unique keywords:",unique_keywords_text)
+
+        # Call the method with the correct argument
+        trend_kw = data_extractor.search_keywords_from_google_trends(unique_keywords_text)
+        print("trend_kw:",trend_kw)
+        result_from_trends_kw = json.loads(trend_kw.content)
+        print("result kw:",result_from_trends_kw)
+
+        # Check if the response has 'data' (or another key you expect), and if its length exceeds 500 characters
+        tag_list = []
+        if "data" in result_from_trends_kw and isinstance(result_from_trends_kw["data"], str):
+            trends_data = result_from_trends_kw["data"]
+            
+            # If the trends data exceeds 500 characters, split it
+            if len(trends_data) > 500:
+                print("LENGTH OF TRENDS_DATA:",len(trends_data))
+                main_data = trends_data[:500]  # First 500 characters
+                tag_list.append(trends_data[500:])  # Remaining characters after 500
+            else:
+                main_data = trends_data  # Use all if it's less than or equal to 500 characters
+
+            # Update the result with the main data and the tag list
+            result_from_trends_kw["data"] = main_data
+            result_from_trends_kw["tag_list"] = tag_list
+
+            print("TAGS:",result_from_trends_kw["tag_list"])
+
+                
+        # Return the combined and deduplicated results
+        return JsonResponse({
+            "Main data":result_from_trends_kw["data"],
+            "TAGLIST": tag_list,
+           "result_from_trends_kw":result_from_trends_kw,
+            "combined_keywords": unique_keywords,
+            "scrapy_result": result_scrapy_data,
+            "trends_result": result_trends_data,
+            "api_result": result_api_data,
+        }, status=200)
+    
+@csrf_exempt
+def extraction_from_video(request):
+    if request.method == 'POST':
+        video_file = request.FILES.get('video_file')
+        if not video_file:
+            return JsonResponse({'error':'Please choose a file'}, status=400)
+        
+        else:
+            # If it exist, process the video file and generate new data
+            try:
+                audio_file_path = YouTubeVideo.process_video_file(video_file)
+                logger.info("Audio file path: %s", audio_file_path)
+
+                logger.info("About to transcribe audio from: %s", audio_file_path)
+                transcription = YouTubeVideo.transcribe_audio(audio_file_path)
+                print("Transcription:",transcription)
+                logger.info("Transcription completed.",transcription)
+
+                # Limit the transcription to the first 2000 characters,bcz google suggest api has limitation.it allow only 2024 chars
+                
+                # URL encode the text
+                # transcription = urllib.parse.quote(transcription_large_text[:50])  
+                
+
+                # Generate keywords from transcription
+                keywords_with_volume = YouTubeVideo.fetch_keywords_from_apis(transcription)
+                
+                keywords = [kw[0] for kw in keywords_with_volume]
+                print("Keywords are:...",keywords)
+                
+               
+                # Create an instance of the extractor with the provided text
+                kw_extractor = FozatoDataExtractor(transcription)
+                
+                # Call the extraction functions and capture their results
+                result_scrapy = kw_extractor.extraction_from_text_scrapy()
+                result_trends = kw_extractor.generate_keywords_from_google_trends()
+                # result_api = kw_extractor.extraction_from_text_api()
+                # print("result_scrapy:",result_scrapy)
+
+
+
+                # # Extract the content of JsonResponse objects as JSON-compatible data
+                result_scrapy_data = json.loads(result_scrapy.content)
+                result_trends_data = json.loads(result_trends.content)
+                # result_api_data = json.loads(result_api.content)
+
+                print("Scrapy result:", result_scrapy_data)
+                print("result_trends:", result_trends_data)
+                # print("result_api:", result_api_data)
+
+                # Check if the trends extraction was successful based on the returned dictionary
+                if "error" in result_trends_data:
+                    return JsonResponse({"error": "Trends extraction failed", "details": result_trends_data["error"]}, status=500)
+
+                # Concatenate and deduplicate results
+                all_keywords = []
+
+                # Collect keywords from Scrapy data if present
+                if "data" in result_scrapy_data and isinstance(result_scrapy_data["data"], list):
+                    all_keywords.extend(result_scrapy_data["data"])
+
+                # Collect keywords from trends data if present
+                if "data" in result_trends_data and isinstance(result_trends_data["data"], dict):
+                    for key, keywords in result_trends_data["data"].items():
+                        all_keywords.extend(keywords)
+
+                # Collect keywords from API data if present
+                # if "keywords" in result_api_data and isinstance(result_api_data["keywords"], list):
+                #     all_keywords.extend(result_api_data["keywords"])
+
+                    print("All Keywords before deduplication:", all_keywords)
+               
+                # Remove duplicates while preserving order
+                # unique_keywords = list(dict.fromkeys(
+                #     keyword if isinstance(keyword, str) else str(keyword) for keyword in all_keywords
+                # ))
+
+                # Convert list into text
+                # unique_keywords_text = ", ".join(unique_keywords)
+                # Assuming FozatoDataExtractor is a class, create an instance first
+                # data_extractor = FozatoDataExtractor(unique_keywords_text)
+                # print("unique keywords:",unique_keywords_text)
+
+                # Call the method with the correct argument
+                # trend_kw = data_extractor.search_keywords_from_google_trends(unique_keywords_text)
+                # print("trend_kw:",trend_kw)
+                # result_from_trends_kw = json.loads(trend_kw.content)
+                # print("result kw:",result_from_trends_kw)
+
+                # Check if the response has 'data' (or another key you expect), and if its length exceeds 500 characters
+                # tag_list = []
+                # if "data" in result_from_trends_kw and isinstance(result_from_trends_kw["data"], str):
+                #     trends_data = result_from_trends_kw["data"]
+                    
+                #     # If the trends data exceeds 500 characters, split it
+                #     if len(trends_data) > 500:
+                #         print("LENGTH OF TRENDS_DATA:",len(trends_data))
+                #         main_data = trends_data[:500]  # First 500 characters
+                #         tag_list.append(trends_data[500:])  # Remaining characters after 500
+                #     else:
+                #         main_data = trends_data  # Use all if it's less than or equal to 500 characters
+
+                #     # Update the result with the main data and the tag list
+                #     result_from_trends_kw["data"] = main_data
+                #     result_from_trends_kw["tag_list"] = tag_list
+
+                #     print("TAGS:",result_from_trends_kw["tag_list"])
+
+                        
+                # Return the combined and deduplicated results
+                return JsonResponse({
+                  
+                    "scrapy_result": result_scrapy_data,
+                    "trends_result": result_trends_data,
+                    "api_result": keywords,
+                }, status=200)    
+            except Exception as e:
+                return JsonResponse({'error': 'An error occurred while processing the video.', 'details': str(e)}, status=500)
+    return JsonResponse({'error': 'Invalid request method'}, status=400)
+
 class YouTubeVideo:
     def __init__(self, url):
         self.url = url
@@ -254,6 +641,55 @@ class YouTubeVideo:
 
     @staticmethod
     def transcribe_audio(video_file_path):
+        # Define audio file path for transcription
+        audio_file_path = video_file_path.replace('.mp4', '.wav')
+        
+        # Extract audio using ffmpeg
+        try:
+            print(f"Extracting audio from: {video_file_path} using ffmpeg")
+            command = ['ffmpeg', '-y', '-i', video_file_path, audio_file_path]
+            subprocess.run(command, check=True)
+        except subprocess.CalledProcessError as e:
+            raise ValueError(f"FFMPEG error: {e}")
+        
+        # Load Whisper model and transcribe
+        try:
+            model = whisper.load_model("base")
+            # Convert warnings into exceptions
+            with warnings.catch_warnings():
+                warnings.filterwarnings("error", category=CacheKeyWarning)
+                result = model.transcribe(audio_file_path)
+                print("RESULT IS:", result)
+            
+            # Check if the detected language is English
+            language = result.get('language')
+            print("language:", language)  # This will output: 'ml'
+            if language != 'en':
+                print("error in transcription")
+                raise ValueError("Transcription failed due to non-English language. Only English videos can be transcribed.")  # Specific error message
+            # Ensure 'text' exists in result
+            if 'text' not in result:
+                print("no text in result")
+                raise ValueError("Transcription failed: 'text' field is missing from result.")
+            else:
+                print("text in result",result['text'])  
+                return result['text']  
+            
+            
+        except CacheKeyWarning as w:
+            # Handle cache key warnings explicitly
+            raise ValueError("Transcription failed due to invalid characters in cache key.")
+        except Exception as e:
+            raise ValueError(f"Whisper model error: {e}")
+        
+        # Clean up by removing audio file after transcription
+        os.remove(audio_file_path)
+        
+        
+    
+
+    @staticmethod
+    def transcribe_audio_old1(video_file_path):
         audio_file_path = video_file_path.replace('.mp4', '.wav')
         command = ['ffmpeg','-y', '-i', video_file_path, audio_file_path]
         subprocess.run(command, check=True)
@@ -684,6 +1120,32 @@ class YouTubeVideo:
                 cache.set(text, keywords, timeout=API_CONFIG['cache_timeout'])
 
         return keywords
+    
+    @staticmethod
+    def extraction_from_text_trends(text):
+   
+        if not text:
+            return JsonResponse({'error': 'No text provided'}, status=400)
+        else:
+            try:
+                 # Create a StringIO object to capture Scrapy output
+                out = StringIO()
+                # Execute the Scrapy spider and capture its output
+                call_command('run_trends', stdout=out)
+                spider_output = out.getvalue()
+                
+                # Optionally, print or log the output to check for issues
+                print("Scrapy Spider Output: ", spider_output)
+
+                # Return the spider output in the JSON response
+                return JsonResponse({
+                    'spider_output': spider_output.strip(),  # strip to clean up unnecessary whitespace
+                })
+
+            except Exception as e:
+                # Catch any errors and return them in the JSON response
+                return JsonResponse({'error': str(e)}, status=500)
+            
   
     @staticmethod
     def generate_title_from_keywords(keywords):
@@ -1013,6 +1475,38 @@ class YouTubeVideo:
             print(f"Failed to generate thumbnails: {response.status_code}")
             print(response.text)  # Print the error message from the API
             return []  # Return an empty list if failed
+        
+
+  
+    @staticmethod
+    def generate_autochapters_from_transcription(transcription):
+        """
+        Generate autochapters based on transcription text.
+        """
+        try:
+            # Split the transcription into sentences or paragraphs
+            sentences = transcription.split('. ')
+            chapters = []
+            current_time = 0  # Starting timestamp (in seconds)
+            chapter_length = 3600  # Approx. duration of each chapter (in seconds)
+
+            # Generate chapter titles and timestamps
+            for i, sentence in enumerate(sentences):
+                # Assume each sentence contributes equally to time progression
+                chapter_start_time = timedelta(seconds=current_time)
+                chapter_title = f"Chapter {i + 1}: {sentence[:100]}"  # Title limited to 50 chars
+                chapters.append({
+                    "start_time": str(chapter_start_time),  # Format: HH:MM:SS
+                    "title": chapter_title
+                })
+                current_time += chapter_length
+
+            return chapters
+
+        except Exception as e:
+            logger.error("Error generating autochapters: %s", str(e))
+            return []
+
 
     @staticmethod
     def generate_thumbnails_from_stable_diffusion(text_prompt, num_images=5):
@@ -1219,8 +1713,64 @@ def extract_keywordss(request):
         print("Keywords are:...",keywords)
 
     return render(request,'results.html',{'keywords':keywords})  
+
 @csrf_exempt
-def extraction_from_video(request):
+def youtube_url(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+
+    if 'file' not in request.FILES:
+        return JsonResponse({"error": "No file provided in request"}, status=400)
+
+    video_file = request.FILES['file']
+    try:
+        # Save and process the video file
+        video_file_path = YouTubeVideo.process_video_file(video_file)
+
+        # Transcribe audio and obtain the transcription text
+        transcription = YouTubeVideo.transcribe_audio(video_file_path)
+        if not transcription:
+            return JsonResponse({"error": "Transcription is empty"})
+
+        # Generate keywords from transcription
+        keywords_with_volume = YouTubeVideo.fetch_keywords_from_apis(transcription)
+        keywords = [kw[0] for kw in keywords_with_volume]
+        if not keywords:
+            return JsonResponse({"error": "Failed to generate keywords"})
+
+        # Generate title
+        title = YouTubeVideo.generate_title_from_keywords(keywords)
+
+        # Generate description
+        description = YouTubeVideo.generate_description_from_keywords(keywords)
+
+        # Generate tags (limited to top 5 keywords)
+        tags = keywords[:5]
+
+        # Clean up by removing the video file after processing
+        os.remove(video_file_path)
+
+        # Prepare and return a success response
+        response = {
+            "message": "SEO process completed!",
+            "description": description,
+            "title": title,
+            "tags": tags,
+        }
+        return JsonResponse(response)
+    
+    except ValueError as e:
+        # Handle transcription-related errors, including language errors
+        return JsonResponse({"error": str(e)}, status=500)  # Return the exact error message
+    
+    except Exception as e:
+        # Log and handle exceptions
+        return JsonResponse({"error": f"Error processing file: {str(e)}"})
+
+
+
+@csrf_exempt
+def extraction_from_video_old1(request):
     if request.method == 'POST':
         video_file = request.FILES.get('video_file')
         if not video_file:
@@ -1235,7 +1785,7 @@ def extraction_from_video(request):
             title = existing_video_file.title
             description = existing_video_file.description
             tags = existing_video_file.tags
-            thumbnails = YouTubeVideo.generate_thumbnails_from_stable_diffusion(keywords[0])
+            # thumbnails = YouTubeVideo.generate_thumbnails_from_stable_diffusion(keywords[0])
             
            
 
@@ -1260,6 +1810,7 @@ def extraction_from_video(request):
 
                 # Generate keywords from transcription
                 keywords_with_volume = YouTubeVideo.fetch_keywords_from_apis(transcription)
+                
                 keywords = [kw[0] for kw in keywords_with_volume]
                 print("Keywords are:...",keywords)
                 
@@ -1290,6 +1841,61 @@ def extraction_from_video(request):
     
             except Exception as e:
                 return render(request,'seooptions.html')
+            
+
+@csrf_exempt
+def extraction_from_video_old1(request):
+    if request.method == 'POST':
+        video_file = request.FILES.get('video_file')
+        if not video_file:
+            return JsonResponse({'error':'Please choose a file'}, status=400)
+        
+        else:
+            # If it exist, process the video file and generate new data
+            try:
+                audio_file_path = YouTubeVideo.process_video_file(video_file)
+                logger.info("Audio file path: %s", audio_file_path)
+
+                logger.info("About to transcribe audio from: %s", audio_file_path)
+                transcription = YouTubeVideo.transcribe_audio(audio_file_path)
+                print("Transcription:",transcription)
+                logger.info("Transcription completed.")
+
+                # Generate keywords from transcription
+                keywords_with_volume = YouTubeVideo.fetch_keywords_from_apis(transcription)
+                
+                keywords = [kw[0] for kw in keywords_with_volume]
+                print("Keywords are:...",keywords)
+                
+
+                #generate title
+                title=YouTubeVideo.generate_title_from_keywords(keywords)
+               
+                #generate description    
+                description=YouTubeVideo.generate_description_from_keywords(keywords)
+                print("description",description)
+
+                #generate tags
+                tags = keywords[:5]
+                # Autochapters generation
+                autochapters = YouTubeVideo.generate_autochapters_from_transcription(transcription)
+                print("Autochapters:", autochapters)
+
+                
+
+                return render(request,'seo_results.html',
+                    {
+                       
+                        'title': title,
+                        'description':description,
+                        'tags':tags,
+                        'autochapters': autochapters,
+                        
+                    }
+                ) 
+    
+            except Exception as e:
+                return render(request,'seooptions.html')            
             
 @csrf_exempt
 def extraction_from_url_old(request):      
@@ -1441,7 +2047,7 @@ def extraction_from_text_trends(request):
             
 
 
-def extraction_from_text(request):
+def extraction_from_text_scrapy(request):
     """
     Extract YouTube video details and keywords for a given search text using Scrapy.
 
@@ -1484,11 +2090,11 @@ def extraction_from_text(request):
         spider_runner = YouTubeSpiderRunner()
 
         # Get scraped data from the spider for the video URL
-        result = spider_runner.run_spider_for_multiple_urls(full_video_urls)
+        result_using_srapy = spider_runner.run_spider_for_multiple_urls(full_video_urls)
 
 
         return JsonResponse(
-            {"message": "Scrapy spider ran successfully", "data": result},
+            {"message": "Scrapy spider ran successfully", "data": result_using_srapy},
             status=200
         )
 
@@ -2140,6 +2746,8 @@ def save_payment_details(request):
         except Exception as e:
             return JsonResponse({'success': False, 'error': str(e)})
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
+
+
 # model_id = "nvidia/Llama-3_1-Nemotron-51B-Instruct"
 # model_kwargs = {"torch_dtype": torch.bfloat16, "trust_remote_code": True, "device_map": "auto"}
 # tokenizer = transformers.AutoTokenizer.from_pretrained(model_id)
@@ -2178,3 +2786,118 @@ def save_payment_details(request):
 #     print(result)
 # else:
 #     print("Failed to retrieve a response.")
+
+
+
+# ************ USING LLAMA 3.2-3B INSTRUCT,PASSING KW OR DESCRIPTION TO LLAMA TO GET ONE KW ****************
+# !pip install transformers
+# !pip install huggingface_hub
+# !pip install torch
+# !pip install accelerate
+# import os
+# os.environ['HF_TOKEN']="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"
+# os.environ['HIGGINGFACEHUB_API_TOKEN']="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"
+# import torch
+# from transformers import pipeline
+
+# model_id = "meta-llama/Llama-3.2-3B-Instruct"
+# pipe = pipeline(
+#     "text-generation",
+#     model=model_id,
+#     torch_dtype=torch.bfloat16,
+#     device_map="auto",
+# )
+# messages = [
+#     {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
+#     {"role": "user", "content": "please give one seo keywords for python programming"},
+# ]
+# outputs = pipe(
+#     messages,
+#     max_new_tokens=256,
+# )
+# print(outputs[0]["generated_text"][-1])
+
+
+
+# ***************PASSING COMBINED KEYWORDS FROM SCRAPY,TRENDS AND API TO LLAMA******************
+
+# def integrate_with_llm(unique_keywords):
+#     """
+#     Pass combined keywords to the LLM pipeline and generate a response.
+#     """
+#     # Initialize the pipeline
+#     model_id = "meta-llama/Llama-3.2-3B-Instruct"
+#     pipe = pipeline(
+#         "text-generation",
+#         model=model_id,
+#         torch_dtype=torch.bfloat16,
+#         device_map="auto",
+#     )
+
+#     # Format the input messages
+#     messages = [
+#         {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
+#         {
+#             "role": "user",
+#             "content": f"Please suggest some SEO-friendly keywords for the following combined keywords: {', '.join(unique_keywords)}",
+#         },
+#     ]
+
+#     # Generate the output
+#     outputs = pipe(
+#         messages,
+#         max_new_tokens=256,
+#     )
+
+#     # Return the generated text
+#     return outputs[0]["generated_text"]
+
+# unique_keywords=["Java", "Effective Java (3rd Edition)", "Data Structures and Algorithms in Python", "Java: The Complete Reference", "Elements of Programming Interviews in Java: The Insiders' Guide", "the java programming language", "a java program", "java programming btech", "c java programming", "c c++ java programming kya hai", "c c++ java programming interview questions and answers", "c programming for java programmers", "d java programming tutorial", "d java programming for beginners", "java in programming", "java in programming language", "f java programming tutorial", "f java programming language", "f java programming for beginners", "g java programming examples", "g java programming tutorial", "h java programming tutorial", "h java programming for beginners", "i java programming good", "i java programming hard", "i java programming important", "java programming", "java programming for beginners", "java programming full course", "java programming in tamil", "java programming language", "java programming fundamentals infosys", "java programming interview questions and answers", "java programming code with harry", "java programming in telugu", "java programming for beginners in telugu", "java programming bca 5th sem", "java programming one shot", "java programming playlist", "java programming tutorial", "java ke program ko run kaise kare", "java ke program", "l java programming tutorial", "l java programming in hindi", "java me program kaise banaye", "m square programming java", "p java programming tutorial", "p java programming for beginners", "q java programming tutorial", "q java programming language", "q java programming in hindi", "r java programming tutorial", "r java programming for beginners", "introduction to java programming in telugu", "introduction to java programming language", "introduction to java programming", "introduction to java programming for beginners", "intro to java programming", "introduction to java programming btech 2nd year", "introduction to java programming and data structures", "welcome to java programming code", "introduction to java programming in tamil", "how to java programming", "fundamentals to java programming class 11", "introduction to java programming class 8", "vs code java programming", "project with java programming", "starting with java programming", "dsa with java programming", "x java programming language", "x java programming tutorial", "x java programming in hindi", "x java programming in tamil", "y java programming tutorial"]
+# pirate_response = integrate_with_llm(unique_keywords)
+# print("pirate response:",pirate_response)
+
+
+
+
+# ********************GETTING DESCRIPTION USING 500 KW GENERATED FROM TRENDS AND SEED KW****************
+# import torch
+# from transformers import pipeline
+# def integrate_with_llm(unique_keywords,seed_keyword):
+#     """
+#     Pass combined keywords to the LLM pipeline and generate a response.
+#     """
+#     # Initialize the pipeline
+#     model_id = "meta-llama/Llama-3.2-3B-Instruct"
+#     pipe = pipeline(
+#         "text-generation",
+#         model=model_id,
+#         torch_dtype=torch.bfloat16,
+#         device_map="auto",
+#     )
+
+#     # Format the input messages
+#     messages = [
+#         {"role": "system", "content": "You are a pirate chatbot who always responds in pirate speak!"},
+#         {
+#             "role": "user",
+#             "content": f"Please give description using the following combined keywords: {', '.join(unique_keywords)} and seed keyword {seed_keyword}",
+#         },
+#     ]
+
+#     # Generate the output
+#     outputs = pipe(
+#         messages,
+#         max_new_tokens=256,
+#     )
+
+#     # Return the generated text
+#     return outputs[0]["generated_text"]
+
+# unique_keywords=["Java", "Effective Java (3rd Edition)", "Data Structures and Algorithms in Python", "Java: The Complete Reference", "Elements of Programming Interviews in Java: The Insiders' Guide", "the java programming language", "a java program", "java programming btech", "c java programming", "c c++ java programming kya hai", "c c++ java programming interview questions and answers", "c programming for java programmers", "d java programming tutorial", "d java programming for beginners", "java in programming", "java in programming language", "f java programming tutorial", "f java programming language", "f java programming for beginners", "g java programming examples", "g java programming tutorial", "h java programming tutorial", "h java programming for beginners", "i java programming good", "i java programming hard", "i java programming important", "java programming", "java programming for beginners", "java programming full course", "java programming in tamil", "java programming language", "java programming fundamentals infosys", "java programming interview questions and answers", "java programming code with harry", "java programming in telugu", "java programming for beginners in telugu", "java programming bca 5th sem", "java programming one shot", "java programming playlist", "java programming tutorial", "java ke program ko run kaise kare", "java ke program", "l java programming tutorial", "l java programming in hindi", "java me program kaise banaye", "m square programming java", "p java programming tutorial", "p java programming for beginners", "q java programming tutorial", "q java programming language", "q java programming in hindi", "r java programming tutorial", "r java programming for beginners", "introduction to java programming in telugu", "introduction to java programming language", "introduction to java programming", "introduction to java programming for beginners", "intro to java programming", "introduction to java programming btech 2nd year", "introduction to java programming and data structures", "welcome to java programming code", "introduction to java programming in tamil", "how to java programming", "fundamentals to java programming class 11", "introduction to java programming class 8", "vs code java programming", "project with java programming", "starting with java programming", "dsa with java programming", "x java programming language", "x java programming tutorial", "x java programming in hindi", "x java programming in tamil", "y java programming tutorial"]
+# seed_keyword="java programming"
+# Description = integrate_with_llm(unique_keywords,seed_keyword)
+# print("Description:",Description)
+
+
+
+

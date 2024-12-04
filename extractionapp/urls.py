@@ -37,6 +37,7 @@ urlpatterns = [
     path('extraction_from_text_api/',views.extraction_from_text_api,name='extraction_from_text_api'),
     path('extraction_from_url_using_scrapy/',views.extraction_from_url_using_scrapy,name='extraction_from_url_using_scrapy'),
     path('extraction_from_url_api/',views.extraction_from_url_api,name='extraction_from_url_api'),
-    path('user_dashboard/',views.user_dashboard,name='user_dashboard')
+    path('user_dashboard/',views.user_dashboard,name='user_dashboard'),
+    path('youtube_url/',views.youtube_url,name='youtube_url')
 
 ]
