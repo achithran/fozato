@@ -380,18 +380,17 @@
         <form method="post" id="payment-form">
             {% csrf_token %}
             <div class="toggle-section">
-                <p><i class="fas fa-calendar"></i> Pay Yearly</p>
+                <p id="yearlyplan" value="yearly"><i class="fas fa-calendar"></i> Pay Yearly</p>
                 
                 <label class="switch">
                     <input type="checkbox" id="plan-toggle">
                     <span class="slider"></span>
                 </label>
-                <p><i class="fas fa-calendar-day"></i> Pay Monthly</p>
+                <p id="monthlyplan" value="monthly"><i class="fas fa-calendar-day"></i> Pay Monthly</p>
             </div>
 
             <div class="row-flex">
-                <input type="hidden" name="amount" id="plan-amount">
-                <input type="hidden" name="plan_duration" id="plan-duration">
+                
                 <!-- Pricing Plans -->
                 <div class="col-md-4">
                     <div class="pricing-container">
@@ -400,15 +399,15 @@
                         <div id="yearly-plan" class="pricing-card hide">
                             <div class="plan-header">
                                 <i class="fas fa-calendar yearly-icon"></i>
-                                <h3>Basic Plan</h3>
+                                <h3 id="basic-plan" value="Basic Plan Yearly">Basic Plan</h3>
+                                
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
-                                    $12.49/month
-                                </label>
+                                    <input type="radio" name="currency" id="basic-usd" value="USD|12.49">
+                                    $12.49/month                                </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="currency" value="INR|832" id="basic-inr" >
                                     ₹832/month
                                 </label>
                             </div>
@@ -436,7 +435,7 @@
                                 </li>
                              
                             </ul>
-                            <button type="button" onclick="startPayment('yearly')">Get Fozato Basic!</button>
+                            <button type="button" id="basic-plan-yearly-details-btn">Get Fozato Basic!</button>
                             <a href="" style="    font-size: 22px;
                             color: #dc3545;
                             text-decoration: none;
@@ -450,18 +449,18 @@
                            
                         </div>
                         <!-- Monthly Plan -->
-                        <div id="monthly-plan" class="pricing-card">
+                        <div id="monthly-plan-div" class="pricing-card">
                             <div class="plan-header">
                                 <i class="fas fa-calendar-day monthly-icon"></i>
-                                <h3>Basic Plan</h3>
+                                <h3 id="monthly-basic-plan" value="Basic Plan Monthly">Basic Plan</h3>
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    <input type="radio" name="currency-monthly-basic-plan" value="USD|14.99" id="monthly-basic-usd" >
                                     $14.99/month
                                 </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="currency-monthly-basic-plan" value="INR|999" id="monthly-basic-inr" >
                                     ₹999/month
                                 </label>
                             </div>
@@ -489,7 +488,7 @@
                                 </li>
                             </ul>
                             
-                            <button type="button" onclick="startPayment('monthly')">Get Fozato Basic!</button> <br><br>
+                            <button type="button" id="basic-plan-monthly-details-btn">Get Fozato Basic!</button> <br><br>
                             <a href="" style="    font-size: 22px;
                             color: #dc3545;
                             text-decoration: none;
@@ -511,15 +510,15 @@
                          <div id="yearly-standard-plan" class="pricing-card hide">
                             <div class="plan-header">
                                 <i class="fas fa-calendar yearly-icon"></i>
-                                <h3>Standard Plan</h3>
+                                <h3 id="yearly-standard-plan-selected" value="standard-plan">Standard Plan</h3>
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    <input type="radio" name="currency-yearly-standard-plan" value="USD|33.32" id="yearly-standard-plan-usd-option" >
                                     $33.32/month
                                 </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="currency-yearly-standard-plan" value="INR|1666" id="yearly-standard-plan-inr-option" >
                                     ₹1666/month
                                 </label>
                             </div>
@@ -547,24 +546,24 @@
 
                                 </li>
                             </ul>
-                            <button type="button" onclick="startPayment('yearly')">Get Fozato Standard!</button>
+                            <button type="button" id="yearly-standard-plan-btn">Get Fozato Standard!</button>
                           
                         </div>
                         <!-- Monthly Plan -->
                         <div id="monthly-standard-plan" class="pricing-card">
                             <div class="plan-header">
                                 <i class="fas fa-calendar-day monthly-icon"></i>
-                                <h3>Standard Plan
-                                </h3>
+                                <h3 id="monthly-standard-plan-selected" value="standard-plan">Standard Plan</h3>
+                                
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    <input type="radio" name="monthly-standard-plan-currency" value="USD|39.99" id="usd-option">
                                     $39.99/month
 
                                 </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="monthly-standard-plan-currency" value="INR|1999" id="inr-option" >
                                     ₹1999/month
                                 </label>
                             </div>
@@ -592,7 +591,7 @@
 
                                 </li>
                             </ul>
-                            <button type="button" onclick="startPayment('monthly')">Get Fozato Standard!</button>
+                            <button type="button" id="monthly-standard-plan-btn">Get Fozato Standard!</button>
                            
                         </div>
     
@@ -607,15 +606,15 @@
                          <div id="yearly-premium-plan" class="pricing-card hide">
                             <div class="plan-header">
                                 <i class="fas fa-calendar yearly-icon"></i>
-                                <h3>Premium plan</h3>
+                                <h3 id="yearly-premium-plan-selected" value="Premium-plan">Premium plan</h3>
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    <input type="radio" name="yearly-premium-plan-currency" value="USD|66.65" id="usd-option-yearly">
                                     $66.65/month
                                 </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="yearly-premium-plan-currency" value="INR|3333" id="inr-option-yearly" >
                                     ₹3333/month
                                 </label>
                             </div>
@@ -639,22 +638,22 @@
                                 <li><i class="fas fa-check-circle"></i> Automated Hashtags (50 Videos / month)
                                 </li>
                             </ul>
-                            <button type="button" onclick="startPayment('yearly')">Get Fozato Premium!</button>
+                            <button type="button" id="yearly-premium-plan-btn">Get Fozato Premium!</button>
                             
                         </div>
                         <!-- Monthly Plan -->
                         <div id="monthly-premium-plan" class="pricing-card">
                             <div class="plan-header">
                                 <i class="fas fa-calendar-day monthly-icon"></i>
-                                <h3>Premium Plan</h3>
+                                <h3 id="monthly-premium-plan-selected" value="premium-plan">Premium Plan</h3>
                             </div>
                             <div class="price">
                                 <label>
-                                    <input type="radio" name="currency" value="USD" id="usd-option" onclick="setAmount(19)">
+                                    <input type="radio" name="monthly-premium-plan-currency" value="USD|79.99" id="usd-option">
                                     $79.99/month
                                 </label>
                                 <label>
-                                    <input type="radio" name="currency" value="INR" id="inr-option" onclick="setAmount(999)">
+                                    <input type="radio" name="monthly-premium-plan-currency" value="INR|3499" id="inr-option" >
                                     ₹3499/month
                                 </label>
                             </div>
@@ -678,7 +677,7 @@
                                 <li><i class="fas fa-check-circle"></i> Automated Hashtags (50 Videos)
                                 </li>
                             </ul>
-                            <button type="button" onclick="startPayment('monthly')">Get Fozato Premium!</button>
+                            <button type="button" id="monthly-premium-plan-btn">Get Fozato Premium!</button>
                           
                         </div>
     
@@ -709,71 +708,13 @@
 
     <script>
         // Update the startPayment function to handle both duration and currency
-function startPayment(duration) {
-    const selectedRadio = document.querySelector('input[name="currency"]:checked');
-    if (!selectedRadio) {
-        alert("Please select a plan amount.");
-        return;
-    }
 
-    // Get currency from the selected radio button
-    const currency = selectedRadio.value;
 
-    const isYearly = duration === "yearly"; // Check if it's the yearly plan
-    const amount = currency === "USD"
-        ? (isYearly ? 190 : 99)  // $190 for yearly, $99 for monthly
-        : (isYearly ? 9990 : 999); // ₹9990 for yearly, ₹999 for monthly
-
-    // Set hidden form fields to save plan details
-    document.getElementById("plan-duration").value = duration;
-    document.getElementById("plan-amount").value = amount;
-
-    // Fetch order ID from backend
-    fetch(`/create_order/${amount}/`, { method: "GET" })
-    .then(response => response.json())
-    .then(order => {
-        const options = {
-            "key": "{{ rzp_test_0XYpYSiR8V6hyh }}",  // Secure this key in the backend
-            "amount": amount * 100,  // Convert to smallest currency unit for Razorpay
-            "currency": currency,
-            "name": "Fozato",
-            "description": "Subscription Payment",
-            "order_id": order.id,
-            "handler": function (response) {
-                // Send payment response to backend for verification
-                fetch("/payment/success/", {
-                    method: "POST",
-                    headers: { 
-                        "Content-Type": "application/json",
-                        "X-CSRFToken": "{{ csrf_token }}" 
-                    },
-                    body: JSON.stringify({
-                        ...response,
-                        plan_duration: duration,
-                        plan_amount: amount
-                    })
-                })
-                .then(() => window.location.href = "/success/") // Redirect after success
-                .catch(() => alert("Payment verification failed"));
-            },
-            "prefill": {
-                "email": "user@example.com",
-                "contact": "9999999999"
-            },
-            "theme": {
-                "color": "#007bff"
-            }
-        };
-        
-        const rzp = new Razorpay(options);
-        rzp.open();
-    })
-    .catch(err => console.log("Order creation failed:", err));
-}
+ 
 
 // Modify the plan toggle behavior for better usability
 const planToggle = document.getElementById('plan-toggle');
-const monthlyPlan = document.getElementById('monthly-plan');
+const monthlyPlan = document.getElementById('monthly-plan-div');
 const yearlyPlan = document.getElementById('yearly-plan');
 const monthly_standard_plan = document.getElementById('monthly-standard-plan')
 const yearly_standard_plan = document.getElementById('yearly-standard-plan')
@@ -813,19 +754,362 @@ planToggle.addEventListener('change', () => {
     }
 });
 
-// Update the setAmount function to only adjust amount for the selected plan duration
-function setAmount() {
-    const selectedRadio = document.querySelector('input[name="currency"]:checked');
-    if (!selectedRadio) return;  // Exit if no currency is selected
+document.getElementById("plan-toggle").addEventListener("change", function() {
+    const planSection = document.getElementById("yearly-plan");
+    if (this.checked) {
+        // If checked, set payment term to "Monthly"
+        document.getElementById("monthlyplan").classList.add("active");
+        document.getElementById("yearlyplan").classList.remove("active");
+    } else {
+        // If unchecked, set payment term to "Yearly"
+        document.getElementById("yearlyplan").classList.add("active");
+        document.getElementById("monthlyplan").classList.remove("active");
+    }
+});
 
-    const currency = selectedRadio.value;
-    const isYearly = document.getElementById('plan-toggle').checked; // Check if yearly plan is selected
-    const amount = currency === "USD" 
-        ? (isYearly ? 190 : 99)  // $190 for yearly, $99 for monthly
-        : (isYearly ? 9990 : 999); // ₹9990 for yearly, ₹999 for monthly
 
-    document.getElementById("plan-amount").value = amount;
-}
+document.getElementById("basic-plan-yearly-details-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    const paymentPlan = document.getElementById("basic-plan").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="currency"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+   // Send data via AJAX to update the user model
+   fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            event: "payment.created",
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+                alert(`Payment initialized. Subscription ID: ${data.subscription_id}`);
+                // Redirect to Razorpay payment page
+                const options = {
+                    key: "rzp_test_0XYpYSiR8V6hyh", // Replace with your Razorpay key
+                    subscription_id: data.subscription_id,
+                    name: "Fozato",
+                    description: "Plan Subscription",
+                    handler: function (response) {
+                        // Handle successful payment
+                        fetch('/process-payment/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            },
+                            body: JSON.stringify({
+                                payment_id: response.razorpay_payment_id,
+                                subscription_id: response.razorpay_subscription_id,
+                                signature: response.razorpay_signature,
+                            }),
+                        })
+                            .then((res) => res.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    alert("Payment Successful!");
+                                } else {
+                                    alert("Payment Failed.");
+                                }
+                            });
+                    },
+                    theme: {
+                        color: "#3399cc",
+                    },
+                 
+                };
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } else {
+                alert(`Failed to initialize payment: ${data.error}`);
+            }
+        })
+        .catch((error) => console.error("Error:", error));
+});
+
+
+document.getElementById("basic-plan-monthly-details-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    const paymentPlan = document.getElementById("monthly-basic-plan").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="currency-monthly-basic-plan"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+    // Send data via AJAX to update the user model
+    fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+                alert(`Payment initialized. Subscription ID: ${data.subscription_id}`);
+                // Redirect to Razorpay payment page
+                const options = {
+                    key: "rzp_test_0XYpYSiR8V6hyh", // Replace with your Razorpay key
+                    subscription_id: data.subscription_id,
+                    name: "Fozato",
+                    description: "Plan Subscription",
+                    handler: function (response) {
+                        // Handle successful payment
+                        fetch('/process-payment/', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                            },
+                            body: JSON.stringify({
+                                payment_id: response.razorpay_payment_id,
+                                subscription_id: response.razorpay_subscription_id,
+                                signature: response.razorpay_signature,
+                            }),
+                        })
+                            .then((res) => res.json())
+                            .then((data) => {
+                                if (data.success) {
+                                    alert("Payment Successful!");
+                                } else {
+                                    alert(`Payment Failed: ${data.error}`);
+                                }
+                            })
+                            .catch((err) => {
+                                console.error("Error processing payment:", err);
+                                alert("Error processing payment.");
+                            });
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            alert("Payment modal closed by user.");
+                        },
+                    },
+                    theme: {
+                        color: "#3399cc",
+                    },
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.open();
+            } else {
+                alert(`Failed to initialize payment: ${data.error}`);
+            }
+        })
+        .catch((error) => console.error("Error:", error));
+});
+
+
+
+document.getElementById("yearly-standard-plan-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    const paymentPlan = document.getElementById("yearly-standard-plan-selected").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="currency-yearly-standard-plan"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+    // Send data via AJAX to update the user model
+    fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Payment details updated successfully!");
+        } else {
+            alert("Failed to update payment details.");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+
+
+document.getElementById("monthly-standard-plan-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    const paymentPlan = document.getElementById("monthly-standard-plan-selected").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="monthly-standard-plan-currency"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+    // Send data via AJAX to update the user model
+    fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Payment details updated successfully!");
+        } else {
+            alert("Failed to update payment details.");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+
+document.getElementById("yearly-premium-plan-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    
+    const paymentPlan = document.getElementById("yearly-premium-plan-selected").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="yearly-premium-plan-currency"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+    // Send data via AJAX to update the user model
+    fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+     .then(response => {
+        if (!response.ok) {
+            throw new Error("HTTP status " + response.status);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert("Payment details updated successfully!");
+        } else {
+             alert("Failed to update payment details: " + (data.error || "Unknown error"));
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+
+document.getElementById("monthly-premium-plan-btn").addEventListener("click", function() {
+    const paymentTerm = document.getElementById("plan-toggle").checked ? "Monthly" : "Yearly";
+    const paymentPlan = document.getElementById("monthly-premium-plan-selected").getAttribute("value");
+   
+
+    // Dynamically retrieve the selected radio button's value
+    const selectedCurrency = document.querySelector('input[name="monthly-premium-plan-currency"]:checked');
+
+    if (!selectedCurrency) {
+        alert("Please select a currency before proceeding.");
+        return; // Stop execution if no currency is selected
+    }
+
+    // Split the value to get amount and currency symbol
+    const [currency, amount] = selectedCurrency.value.split('|');
+
+    // Send data via AJAX to update the user model
+    fetch('/update-payment-details/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            payment_term: paymentTerm,
+            payment_plan: paymentPlan,
+            amount: parseFloat(amount), // Convert to number for backend processing
+            currency: currency
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert("Payment details updated successfully!");
+        } else {
+            alert("Failed to update payment details.");
+        }
+    })
+    .catch(error => console.error('Error:', error));
+});
+
+   
 
     </script>
    

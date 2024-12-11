@@ -30,7 +30,7 @@ import transformers
 import torch
 
 
-from .models import Keyword,videoSEODB,urlSEODB,YouTubeUser,UserRole,UserGoal,Discovery,Subscription,ContactForm,PaymentDetails
+from .models import Keyword,videoSEODB,urlSEODB,YouTubeUser,Subscription_Data,Subscription,ContactForm,PaymentDetails,AffiliateUser,Payment,PaymentPlan
 from django.conf import settings
 
 from youtube_transcript_api import YouTubeTranscriptApi
@@ -81,6 +81,8 @@ from datetime import timedelta
 
 import warnings
 from django.core.cache.backends.base import CacheKeyWarning
+# to convert payment amount string to decimal
+from decimal import Decimal
 
 # Import your Scrapy spider
 # from fozato_scrapy_project.spiders.youtube_tags import YouTubeTagsSpider
@@ -90,7 +92,11 @@ from django.core.cache.backends.base import CacheKeyWarning
 
 
 # Initialize Razorpay client
-razorpay_client = razorpay.Client(auth=(RAZORPAY_API_KEY, RAZORPAY_API_SECRET))
+# razorpay_client = razorpay.Client(auth=(RAZORPAY_API_KEY, RAZORPAY_API_SECRET))
+from razorpay import Client, Utility
+
+from django.http import HttpResponse
+from razorpay.errors import SignatureVerificationError
 
 # YouTube OAuth 2.0 Scopes
 SCOPES = [
@@ -107,7 +113,9 @@ CREDENTIALS_PATH = os.path.join(settings.BASE_DIR, "credentials.json")
 flow = Flow.from_client_secrets_file(
     CREDENTIALS_PATH,
     scopes=SCOPES,
-    redirect_uri="https://localhost:8000/auth/callback"
+    # redirect_uri="https://localhost:8000/auth/callback"
+    redirect_uri="https://ada3-103-161-55-72.ngrok-free.app/auth/callback"
+
 )
 # Generate the authorization URL
 auth_url, _ = flow.authorization_url(prompt='consent')
@@ -149,8 +157,8 @@ def seo_options(request):
 #         except Exception as e:
 #             print(f"Proxy {proxy} failed: {e}")
     return render(request,'seooptions.html')
-def home(request):
-    return render(request, 'home.html')  
+# def home(request):
+#     return render(request, 'home.html')  
 def goal_selection(request):
     goal_options = {
         'Boost video views': 'Boost video views',
@@ -185,15 +193,51 @@ def checkout(request):
     return render(request,'checkout.html')
 def affiliate_dashboard(request):
     return render(request,'dashboard.html')   
+def referal_analytics(request):
+    return render(request,'aff_dashboard_ref_analytics.html')
 def mobilenumber(request):
     return render(request,'mobilenumber.html')     
 def user_dashboard(request):
     return render(request,'user_dashboard1.html')
+def user_dahboard_settings(request):
+    return render(request,'user_dashboard_settings.html')
 
 from django.http import JsonResponse
 from io import StringIO
 from urllib.parse import urlencode
 from django.core.management import call_command
+
+import hashlib
+
+def generate_referral_code(email):
+    """Generate a unique referral code based on email."""
+    return hashlib.md5(email.encode()).hexdigest()[:8]  # Shorten to 8 characters
+
+def generate_referral(request):
+    print("HTTP method received:", request.method)  # Debugging
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        print("Email received:", email)  # Debugging
+
+        if not email:
+            return JsonResponse({'error': 'Email is required'}, status=400)
+
+        # Check if user already has a referral code
+        affiliate_user, created = AffiliateUser.objects.get_or_create(email=email)
+        if created:
+            affiliate_user.referral_code = generate_referral_code(email)
+            affiliate_user.save()
+         
+        # Construct the referral link to point to the home page
+        referral_link = f"https://127.0.0.1:8000/home?referral_code={affiliate_user.referral_code}"
+
+
+        print("Referral code:", affiliate_user.referral_code)  # Debugging
+        return JsonResponse({'referral_code': referral_link})
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+
+
 
 class FozatoDataExtractor:
     def __init__(self, text):
@@ -1697,8 +1741,25 @@ def extract_keywords(request):
     
             
     return JsonResponse({'error': 'Invalid request method'}, status=400)
+from datetime import datetime
+@csrf_exempt
 def home(request):
-    return render(request, 'home.html')
+    referral_code = request.GET.get('referral_code')  # Get the referral code from URL
+
+    # Find affiliate user based on referral code if available
+    if referral_code:
+        try:
+            affiliate_user = AffiliateUser.objects.get(referral_code=referral_code)
+            # Optionally log the referral usage or update login time
+            affiliate_user.user_logged_in_date = datetime.now()  # Update the login time
+            affiliate_user.save()
+            email = affiliate_user.email  # Use email for prepopulation
+        except AffiliateUser.DoesNotExist:
+            email = ''
+    else:
+        email = ''
+
+    return render(request, 'home.html',{'email': email,'referral_code':referral_code})
 def results(request):
     return render(request, 'results.html')
 def exraction(request):
@@ -2256,7 +2317,9 @@ def youtube_authenticate_for_affiliated(request,contact_id):
     flow = Flow.from_client_secrets_file(
         CREDENTIALS_PATH,
         scopes=SCOPES,
-        redirect_uri="https://localhost:8000/auth/callback"
+        # redirect_uri="https://localhost:8000/auth/callback"
+        redirect_uri="https://ada3-103-161-55-72.ngrok-free.app/auth/callback"
+
     )
     # Get the authorization URL and state
     authorization_url, state = flow.authorization_url(prompt="consent")
@@ -2276,7 +2339,9 @@ def callback_affiliated(request):
         flow = Flow.from_client_secrets_file(
             CREDENTIALS_PATH,
             scopes=SCOPES,
-            redirect_uri="https://localhost:8000/auth/callback"
+            # redirect_uri="https://localhost:8000/auth/callback"
+            redirect_uri="https://ada3-103-161-55-72.ngrok-free.app/auth/callback"
+
         )
         state = request.session.get('auth_state')
         contact_id = request.session.get('contact_id')
@@ -2348,8 +2413,12 @@ def callback_affiliated(request):
 
 
 
-
+@csrf_exempt
 def youtube_authenticate(request):
+    referral_code = request.GET.get('referral_code')  # Get the referral code from URL
+    if referral_code:
+        request.session['referral_code'] = referral_code
+
     # Initiate OAuth flow with YouTube scope
     
     print("CREDENTIALS_PATH: ", CREDENTIALS_PATH)
@@ -2360,35 +2429,54 @@ def youtube_authenticate(request):
     flow = Flow.from_client_secrets_file(
         CREDENTIALS_PATH,
         scopes=SCOPES,
-        redirect_uri="https://localhost:8000/auth/callback"
+        # redirect_uri="https://localhost:8000/auth/callback"
+        redirect_uri="https://ada3-103-161-55-72.ngrok-free.app/auth/callback"
+
     )
     # Get the authorization URL and state
     authorization_url, state = flow.authorization_url(prompt="consent")
 
     # Store flow and contact_id in the session for later use
     request.session['auth_state'] = state
+    request.session.modified = True  # Mark session as modified
     request.session.save() 
     # Log session data
     print(f"Session data after saving: {request.session.items()}")
+    # Log the session key
+    print(f"Session Key: {request.session.session_key}")
+
+    print(f"Session Cookies: {request.COOKIES}")
+
 
     return redirect(authorization_url)
 
-
+@csrf_exempt
 def callback(request):
     try:
+        
         # Log the incoming request data
         print("Request Parameters:", request.GET)
 
+       
+        # Log the session key
+        print(f"Session Key: {request.session.session_key}")
+
         # Log session data
         print(f"Session data in callback: {request.session.items()}")
+        print("Session before retrieving auth_state:", dict(request.session))
 
         # Initialize OAuth flow
         flow = Flow.from_client_secrets_file(
             CREDENTIALS_PATH,
             scopes=SCOPES,
-            redirect_uri="https://localhost:8000/auth/callback"
+            # redirect_uri="https://localhost:8000/auth/callback"
+            redirect_uri="https://ada3-103-161-55-72.ngrok-free.app/auth/callback"
+
         )
         state = request.session.get('auth_state')
+        # Retrieve the referral code correctly
+        referral_code = request.GET.get('referral_code')
+        print("Referral Code:", referral_code)
         if not state:
             print("Error: 'auth_state' is missing from session")
             return JsonResponse({"error": "'auth_state' missing from session"}, status=400)
@@ -2435,8 +2523,18 @@ def callback(request):
         else:
             # Create a new user if not exists
             YouTubeUser.objects.create(username=username, channel_name=channel_name, email=email,free_trial_start_date=timezone.now(),trial_status='Active'  )
-       
-
+        
+        if referral_code:
+            affiliated_user=AffiliateUser.objects.filter(referral_code=referral_code).first()
+            if affiliated_user:
+                # Optionally update existing user details if needed
+                affiliated_user.username = username
+                affiliated_user.channel_name = channel_name
+                affiliated_user.trial_status = 'Active' 
+                affiliated_user.user_email=email
+                affiliated_user.free_trial_start_date=timezone.now()
+                affiliated_user.save()
+            
         # Clear sensitive session data
         del request.session['auth_state']
         
@@ -2521,7 +2619,7 @@ def onboarding_action(request):
             youtube_user.save()
         
         # Save to the database
-        user, created = UserRole.objects.get_or_create(
+        user, created = YouTubeUser.objects.get_or_create(
             username=channel_name,
             defaults={
                 'email': email,
@@ -2567,7 +2665,7 @@ def save_goal_data(request):
         request.session['goal'] = goal
 
         # Update or create YouTubeUser entry in the database
-        user, created = UserGoal.objects.get_or_create(
+        user, created = YouTubeUser.objects.get_or_create(
             
             email=email,
             defaults={
@@ -2601,11 +2699,11 @@ def save_discovery_data(request):
         if not all([goal, channel_name, email, role,discovery]):
             return JsonResponse({"error": "Incomplete data."}, status=400)
 
-        # Save goal in session
+        # Save discovery in session
         request.session['discovery'] = discovery
 
         # Update or create YouTubeUser entry in the database
-        user, created = Discovery.objects.get_or_create(
+        user, created = YouTubeUser.objects.get_or_create(
             
             email=email,
             defaults={
@@ -2618,12 +2716,896 @@ def save_discovery_data(request):
 
         # Update goal if the user already exists
         if not created:
-            user.goal = goal
+            user.discovery = discovery
             user.save()
 
         return redirect('paymentselection')
     return JsonResponse({"error": "Invalid request."}, status=400)  
+
+import json
+from decimal import Decimal
+from django.http import JsonResponse
+from django.utils import timezone
+import razorpay
+
+# Razorpay Client Initialization
+razorpay_client = razorpay.Client(auth=(RAZORPAY_API_KEY, RAZORPAY_API_SECRET))
+
+from django.http import JsonResponse
+from django.shortcuts import render
+from .models import PaymentPlan  # Import your model
+from razorpay.errors import BadRequestError, ServerError
+
+def update_payment_details_old3(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            print(f"Received data: {json.dumps(data, indent=2)}")  # Log the incoming data
+
+            event = data.get('event')
+            if not event:
+                return JsonResponse({"success": False, "error": "Event is missing or not supported."})
+
+            # Check for event type
+            if event == "payment.captured":
+                process_successful_payment(data)
+            elif event == "payment.failed":
+                process_failed_payment(data)
+            elif event == "payment.created":
+                try:
+                    # Validate required fields
+                    payment_plan = data.get("payment_plan")
+                    payment_term = data.get("payment_term")
+                    amount = data.get("amount")
+                    currency = data.get("currency")
+                    email = request.session.get("email")
+
+                    if not all([payment_plan, payment_term, amount, currency, email]):
+                        return JsonResponse({
+                            "success": False,
+                            "error": "Missing required fields for payment initialization."
+                        })
+
+                    # Retrieve or create the user
+                    youtube_user, created = YouTubeUser.objects.get_or_create(email=email)
+
+                    # Update user payment details
+                    youtube_user.payment_term = payment_term
+                    youtube_user.payment_plan = payment_plan
+                    youtube_user.amount = amount
+                    youtube_user.currency = currency
+                    youtube_user.save()
+
+                    logger.info(f"Updated payment details for user: {youtube_user.email}")
+
+                   
+                
+                    # Retrieve the selected payment plan
+                    plan = PaymentPlan.objects.filter(name=payment_plan).first()
+                    if not plan:
+                        return JsonResponse({"success": False, "error": "Payment plan not found."})
+
+                    # Create Razorpay subscription
+                    subscription_data = {
+                        "plan_id": plan.plan_id,
+                        "total_count": 12 if payment_term.lower() == "monthly" else 1,
+                        "customer_notify": 1,
+                    }
+
+                    try:
+                        subscription = razorpay_client.subscription.create(subscription_data)
+                    except (BadRequestError, ServerError) as e:
+                        return JsonResponse({"success": False, "error": f"Razorpay Error: {str(e)}"})
+                    except Exception as e:
+                        return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+                    # Create or update subscription record
+                    subscription_record = Subscription_Data.objects.create(
+                        youtube_user=youtube_user,
+                        plan_name=plan.name,
+                        start_date=timezone.now(),
+                        end_date=timezone.now() + timezone.timedelta(days=365) if payment_term.lower() == "yearly" else timezone.now() + timezone.timedelta(days=30),
+                        razorpay_subscription_id=subscription["id"],
+                    )
+
+                    # Create Payment record
+                    Payment.objects.create(
+                        youtube_user=youtube_user,
+                        payment_id=subscription["id"],
+                        subscription=subscription_record,
+                        amount=amount,
+                        currency=currency,
+                        status="success",
+                        payment_date=timezone.now(),
+                        razorpay_order_id=subscription["id"],
+                        razorpay_signature=subscription.get("signature", ""),
+                    )
+
+                    return JsonResponse({"success": True, 
+                                         "subscription_id": subscription["id"],
+                                        "message": "Payment details successfully initialized.",
+                                        "user": youtube_user.email
+                                         })
+
+                except Exception as e:
+                    logger.error(f"Error processing payment.created event: {str(e)}")
+                    return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
+
+               
+            else:
+                print(f"Unsupported event: {event}")
+                return JsonResponse({"success": False, "error": f"Unsupported event: {event}"})
+
+            
+          
+
+            
+            
+        except Exception as e:
+            logger.error(f"Error in update_payment_details: {str(e)}")
+            return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+def update_payment_details(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            print(f"Received data: {json.dumps(data, indent=2)}")  # Log the incoming data
+
+            event = data.get('event')
+            if not event:
+                return JsonResponse({"success": False, "error": "Event is missing or not supported."})
+
+            # Check for event type
+            if event == "payment.captured":
+                process_successful_payment(data)
+            elif event == "payment.failed":
+                process_failed_payment(data)
+            elif event == "payment.created":
+                try:
+                    # Validate required fields
+                    payment_plan = data.get("payment_plan")
+                    payment_term = data.get("payment_term")
+                    amount = data.get("amount")
+                    currency = data.get("currency")
+                    email = request.session.get("email")
+
+                    if not all([payment_plan, payment_term, amount, currency, email]):
+                        return JsonResponse({
+                            "success": False,
+                            "error": "Missing required fields for payment initialization."
+                        })
+
+                    # Retrieve or create the user
+                    youtube_user, created = YouTubeUser.objects.get_or_create(email=email)
+
+                    # Update user payment details
+                    youtube_user.payment_term = payment_term
+                    youtube_user.payment_plan = payment_plan
+                    youtube_user.amount = amount
+                    youtube_user.currency = currency
+                    youtube_user.save()
+
+                    logger.info(f"Updated payment details for user: {youtube_user.email}")
+
+                    # Retrieve the selected payment plan
+                    plan = PaymentPlan.objects.filter(name=payment_plan).first()
+                    if not plan:
+                        return JsonResponse({"success": False, "error": "Payment plan not found."})
+
+                    # Create Razorpay subscription
+                    subscription_data = {
+                        "plan_id": plan.plan_id,
+                        "total_count": 12 if payment_term.lower() == "monthly" else 1,
+                        "customer_notify": 1,
+                    }
+
+                    try:
+                        subscription = razorpay_client.subscription.create(subscription_data)
+                    except (BadRequestError, ServerError) as e:
+                        return JsonResponse({"success": False, "error": f"Razorpay Error: {str(e)}"})
+                    except Exception as e:
+                        return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+                    # Create or update subscription record
+                    subscription_record = Subscription_Data.objects.create(
+                        youtube_user=youtube_user,
+                        plan_name=plan.name,
+                        start_date=timezone.now(),
+                        end_date=timezone.now() + timezone.timedelta(days=365) if payment_term.lower() == "yearly" else timezone.now() + timezone.timedelta(days=30),
+                        razorpay_subscription_id=subscription["id"],
+                    )
+
+                    # Create Payment record
+                    Payment.objects.create(
+                        youtube_user=youtube_user,
+                        payment_id=subscription["id"],
+                        subscription=subscription_record,
+                        amount=amount,
+                        currency=currency,
+                        status="pending",  # Set status as pending until payment is confirmed
+                        payment_date=timezone.now(),
+                        razorpay_order_id=subscription["id"],
+                        razorpay_signature=subscription.get("signature", ""),
+                    )
+
+                    # Generate subscription message
+                    payment_link = subscription.get("short_url", "")
+                    subscription_message = generate_subscription_message(plan.name, payment_link, "Fozato")
+                    print(f"Generated subscription message: {subscription_message}")
+
+                    return JsonResponse({
+                        "success": True,
+                        "subscription_id": subscription["id"],
+                        "message": "Payment details successfully initialized.",
+                        "subscription_message": subscription_message,
+                        "user": youtube_user.email
+                    })
+
+                except Exception as e:
+                    logger.error(f"Error processing payment.created event: {str(e)}")
+                    return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
+
+            else:
+                print(f"Unsupported event: {event}")
+                return JsonResponse({"success": False, "error": f"Unsupported event: {event}"})
+
+        except Exception as e:
+            logger.error(f"Error in update_payment_details: {str(e)}")
+            return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+
+def generate_subscription_message(plan_name, link, company_name="Your Company Name"):
+    """
+    Generate a subscription message for the customer.
+
+    :param plan_name: Name of the subscription plan
+    :param link: Razorpay payment link
+    :param company_name: Your company name (default: "Your Company Name")
+    :return: Formatted message
+    """
+    message = f"""
+    Dear Customer,
+
+    Your subscription for the **{plan_name}** has been created but is awaiting the first payment.
+    Please complete the payment using the following link: [{link}]({link}).
+
+    If you encounter any issues, feel free to contact our support team.
+
+    Regards,  
+    {company_name}
+    """
+    return message
+
+def process_payment(request):
+    if request.method == "POST":
+        try:
+            # Parse the incoming payment data
+            data = json.loads(request.body)
+            payment_id = data.get('razorpay_payment_id')
+            subscription_id = data.get('razorpay_subscription_id')
+            signature = data.get('razorpay_signature')
+
+            # Verify the payment signature using Razorpay's utility
+            params_dict = {
+                'razorpay_order_id': subscription_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature,
+            }
+            try:
+                razorpay_client.utility.verify_payment_signature(params_dict)
+            except Exception as e:
+                return JsonResponse({"success": False, "error": "Payment signature verification failed."})
+
+            # Retrieve the subscription and user
+            subscription = Subscription_Data.objects.filter(razorpay_subscription_id=subscription_id).first()
+            if not subscription:
+                return JsonResponse({"success": False, "error": "Subscription not found."})
+
+            youtube_user = subscription.youtube_user
+
+            # Create or update the payment entry
+            Payment.objects.create(
+                youtube_user=youtube_user,
+                payment_id=payment_id,
+                subscription=subscription,
+                amount=subscription.youtube_user.amount,  # Assuming subscription amount matches payment
+                currency=subscription.youtube_user.currency,
+                status="success",
+                payment_date=timezone.now(),
+                razorpay_order_id=subscription_id,
+                razorpay_signature=signature,
+            )
+
+            # Update subscription status
+            subscription.status = "active"
+            subscription.save()
+
+            return JsonResponse({"success": True, "message": "Payment processed successfully."})
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+
+def process_successful_payment(data):
+    """
+    Process the payment when it is captured successfully.
+    This function can include logic like updating the payment status,
+    notifying the user, or other post-payment tasks.
+    """
+    try:
+        # Extract relevant data from the incoming payload
+        payment_id = data.get('razorpay_payment_id')
+        subscription_id = data.get('razorpay_subscription_id')
+
+        # Handle successful payment logic (update subscription status, etc.)
+        subscription = Subscription_Data.objects.filter(razorpay_subscription_id=subscription_id).first()
+        if subscription:
+            subscription.status = "active"
+            subscription.save()
+
+        # Log the successful payment or trigger notifications
+        print(f"Payment captured successfully: Payment ID - {payment_id}, Subscription ID - {subscription_id}")
+        
+    except Exception as e:
+        print(f"Error processing successful payment: {str(e)}")
+
+def process_failed_payment(data):
+    """
+    Process the payment when it fails.
+    This function can include logic like updating the payment status,
+    notifying the user, or other actions when the payment fails.
+    """
+    try:
+        # Extract relevant data from the incoming payload
+        payment_id = data.get('razorpay_payment_id')
+        subscription_id = data.get('razorpay_subscription_id')
+
+        # Handle failed payment logic (mark subscription as failed, notify user, etc.)
+        subscription = Subscription_Data.objects.filter(razorpay_subscription_id=subscription_id).first()
+        if subscription:
+            subscription.status = "failed"
+            subscription.save()
+
+        # Log the failed payment or trigger notifications
+        print(f"Payment failed: Payment ID - {payment_id}, Subscription ID - {subscription_id}")
+        
+    except Exception as e:
+        print(f"Error processing failed payment: {str(e)}")
+
+
+def update_payment_details_old2(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            payment_term = data.get("payment_term")
+            payment_plan_name = data.get("payment_plan")
+            amount = Decimal(data.get("amount"))
+            currency_symbol = data.get("currency")
+            channel_name = request.session.get('channel_name')
+            email = request.session.get('email')
+            role = request.session.get('role')
+            goal = request.session.get('goal')
+            discovery = request.session.get('discovery')
+
+            # youtube_user_email = data.get("email")  # Assumes email is passed in the request
+
+            
+            
+            # Check for required fields
+            if not all([payment_term, payment_plan_name, amount, currency_symbol]):
+                missing_fields = [field for field in ["payment_term", "payment_plan", "amount", "currency","email"] if not data.get(field)]
+                if missing_fields:
+                    return JsonResponse({"success": False, "error": f"Missing required fields: {', '.join(missing_fields)}"})
+                               
+
+            # Retrieve or create YouTubeUser
+            youtube_user, created = YouTubeUser.objects.get_or_create(email=email)
+            if youtube_user:
+                youtube_user.payment_term = payment_term
+                youtube_user.payment_plan = payment_plan_name
+                youtube_user.amount = amount
+                youtube_user.currency = currency_symbol
+                youtube_user.save()
+                
+           
+            # Update or create YouTubeUser entry in the database
+            else:
+                # If the user doesn't exist, create a new one
+                youtube_user = YouTubeUser.objects.create(
+                    email=email,
+                    channel_name=channel_name,
+                    role=role,
+                    goal=goal,
+                    discovery=discovery,
+                    payment_term=payment_term,
+                    payment_plan=payment_plan_name,
+                    amount=amount,
+                    currency=currency_symbol
+                )
+            print("youtube user updated")
+
+            # Retrieve the selected payment plan
+            plan = PaymentPlan.objects.filter(name=payment_plan_name).first()
+            if not plan:
+                return JsonResponse({"success": False, "error": "Payment plan not found."})
+
+            # Log the plan_id to ensure it's correct
+            print(f"Retrieved plan: {plan}")
+
+            # Create Razorpay subscription
+            subscription_data = {
+                "plan_id": plan.plan_id,
+                "total_count": 12 if payment_term.lower() == "monthly" else 1,
+                "customer_notify": 1,
+            }
+            print(f"Retrieved plan_id: {plan.plan_id}")
+           
+
+            try:
+                subscription = razorpay_client.subscription.create(subscription_data)
+            except razorpay.errors.BadRequestError as e:
+                print(f"Razorpay BadRequestError: {e}")
+                return JsonResponse({"success": False, "error": "Bad Request Error. Please check your subscription data."})
+            except razorpay.errors.ServerError as e:
+                print(f"Razorpay ServerError: {e}")
+                return JsonResponse({"success": False, "error": "Server Error. Please try again later."})
+            except Exception as e:
+                if "Authentication failed" in str(e):
+                    print(f"Razorpay Authentication Error: {e}")
+                    return JsonResponse({"success": False, "error": "Authentication failed. Check Razorpay API keys."})
+                print(f"Razorpay General Error: {e}")
+                return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+            # Create or update subscription record in Subscription_Data
+            subscription_data = Subscription_Data.objects.create(
+                youtube_user=youtube_user,
+                plan_name=plan.name,
+                start_date=timezone.now(),
+                end_date=timezone.now() + timezone.timedelta(days=365) if payment_term.lower() == "yearly" else timezone.now() + timezone.timedelta(days=30),
+                razorpay_subscription_id=subscription["id"],
+            )
+            
+            
+            
+            # Create Payment record
+            Payment.objects.create(
+                youtube_user=youtube_user,
+                payment_id=subscription["id"],
+                subscription=subscription_data,
+                amount=amount,
+                currency=currency_symbol,
+                status="success",
+                payment_date=timezone.now(),
+                razorpay_order_id=subscription["id"],
+                razorpay_signature=subscription.get("signature", ""),
+            )
+
+            return JsonResponse({"success": True, "subscription_id": subscription["id"]})
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
     
+    return JsonResponse({"success": False, "error": "Invalid request method."})   
+
+def process_payment_old2(request):
+    if request.method == "POST":
+        try:
+            # Parse the incoming payment data
+            data = json.loads(request.body)
+            payment_id = data.get('razorpay_payment_id')
+            subscription_id = data.get('razorpay_subscription_id')
+            signature = data.get('razorpay_signature')
+
+            # Verify the payment signature using Razorpay's utility
+            params_dict = {
+                'razorpay_order_id': subscription_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature,
+            }
+            try:
+                razorpay_client.utility.verify_payment_signature(params_dict)
+            except Exception as e:
+                return JsonResponse({"success": False, "error": "Payment signature verification failed."})
+
+            # Retrieve the subscription and user
+            subscription = Subscription_Data.objects.filter(razorpay_subscription_id=subscription_id).first()
+            if not subscription:
+                return JsonResponse({"success": False, "error": "Subscription not found."})
+
+            # Retrieve or create YouTubeUser
+            youtube_user = subscription.youtube_user
+
+            # Create or update the payment entry
+            Payment.objects.create(
+                youtube_user=youtube_user,
+                payment_id=payment_id,
+                subscription=subscription,
+                amount=subscription.youtube_user.amount,  # Assuming subscription amount matches payment
+                currency=subscription.youtube_user.currency,
+                status="success",
+                payment_date=timezone.now(),
+                razorpay_order_id=subscription_id,
+                razorpay_signature=signature,
+            )
+
+            # Update subscription status
+            subscription.status = "active"
+            subscription.save()
+            
+
+            return JsonResponse({"success": True, "message": "Payment processed successfully."})
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."}) 
+
+@csrf_exempt
+def razorpay_webhook(request):
+    webhook_secret = 'RMkzX3kh8@kL@9B'  # Secret configured in Razorpay
+    signature = request.headers.get('x-razorpay-signature')
+    payload = request.body
+
+    # Verify the signature
+    try:
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id': request.POST['razorpay_order_id'],
+            'razorpay_payment_id': request.POST['razorpay_payment_id'],
+            'razorpay_signature': signature,
+        })
+    except razorpay.errors.SignatureVerificationError:
+        return JsonResponse({'error': 'Invalid signature'}, status=400)
+
+    # Process the event after successful signature verification
+    return JsonResponse({'success': 'Webhook processed'}, status=200)
+
+def update_payment_details_old1(request):
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body)
+            payment_term = data.get("payment_term")
+            payment_plan_name = data.get("payment_plan")
+            amount = Decimal(data.get("amount"))
+            currency_symbol = data.get("currency")
+            
+            # Check for required fields
+            if not all([payment_term, payment_plan_name, amount, currency_symbol]):
+                return JsonResponse({"success": False, "error": "Missing required fields."})
+
+            # Retrieve the selected payment plan
+            plan = PaymentPlan.objects.filter(name=payment_plan_name).first()
+            if not plan:
+                return JsonResponse({"success": False, "error": "Payment plan not found."})
+            # Log the plan_id to ensure it's correct
+            print(f"Retrieved plan: {plan}")
+
+            # Create Razorpay subscription
+            subscription_data = {
+                "plan_id": plan.plan_id,
+                "total_count": 12 if payment_term.lower() == "monthly" else 1,
+                "customer_notify": 1,
+            }
+            print(f"Retrieved plan_id: {plan.plan_id}")
+            try:
+                subscription = razorpay_client.subscription.create(subscription_data)
+            except razorpay.errors.BadRequestError as e:  # Handle Razorpay-specific errors
+                print(f"Razorpay BadRequestError: {e}")
+                return JsonResponse({"success": False, "error": "Bad Request Error. Please check your subscription data."})
+            except razorpay.errors.ServerError as e:  # Handle server errors
+                print(f"Razorpay ServerError: {e}")
+                return JsonResponse({"success": False, "error": "Server Error. Please try again later."})
+            except Exception as e:  # Handle generic errors
+                if "Authentication failed" in str(e):
+                    print(f"Razorpay Authentication Error: {e}")
+                    return JsonResponse({"success": False, "error": "Authentication failed. Check Razorpay API keys."})
+                print(f"Razorpay General Error: {e}")
+                return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+
+            return JsonResponse({"success": True, "subscription_id": subscription["id"]})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": f"Error: {str(e)}"})
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+
+
+def process_payment_old(request):
+    if request.method == "POST":
+        try:
+            # Parse the incoming payment data
+            data = json.loads(request.body)
+            payment_id = data.get('razorpay_payment_id')
+            subscription_id = data.get('razorpay_subscription_id')
+            signature = data.get('razorpay_signature')
+
+            # Verify the payment signature using Razorpay's utility
+            params_dict = {
+                'razorpay_order_id': subscription_id,
+                'razorpay_payment_id': payment_id,
+                'razorpay_signature': signature,
+            }
+            try:
+                Utility.verify_payment_signature(params_dict)
+            except Exception as e:
+                return JsonResponse({"success": False, "error": "Payment signature verification failed."})
+
+            # Retrieve the subscription and user
+            subscription = Subscription_Data.objects.filter(razorpay_subscription_id=subscription_id).first()
+            if not subscription:
+                return JsonResponse({"success": False, "error": "Subscription not found."})
+
+            # Create or update the payment entry
+            Payment.objects.create(
+                youtube_user=subscription.youtube_user,
+                payment_id=payment_id,
+                subscription=subscription,
+                amount=subscription.youtube_user.amount,  # Assuming subscription amount matches payment
+                currency=subscription.youtube_user.currency,
+                status="success",
+                payment_date=timezone.now(),
+                razorpay_order_id=subscription_id,
+                razorpay_signature=signature,
+            )
+
+            # Update subscription status if necessary
+            subscription.status = "active"
+            subscription.save()
+
+            return JsonResponse({"success": True, "message": "Payment processed successfully."})
+
+        except Exception as e:
+            return JsonResponse({"success": False, "error": f"An error occurred: {str(e)}"})
+
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+
+
+def update_payment_details_old(request):
+    if request.method == "POST":
+        try:
+            # Get the data from the AJAX request
+            data = json.loads(request.body)
+            payment_term = data.get("payment_term")
+            payment_plan = data.get("payment_plan")
+            amount = data.get("amount")
+            currency_symbol = data.get("currency")
+            channel_name = request.session.get('channel_name')
+            email = request.session.get('email')
+            role = request.session.get('role')
+            goal = request.session.get('goal')
+            discovery = request.session.get('discovery')
+
+            # Retrieve the predefined plan from your database
+            predefined_plan = Payment.objects.filter(name=payment_plan).first()
+            if not predefined_plan:
+                return JsonResponse({"success": False, "error": "Payment plan not found in the database."})
+
+            # # Ensure amount is a valid Decimal value
+            # if amount_str:
+            #     # Assuming the amount string is in a format like "$12.49" or "₹832"
+            #     amount = Decimal(amount_str.replace('$', '').replace('₹', '').strip())
+            # else:
+            #     raise ValueError("Amount is required and must be a valid number.")
+
+            youtube_user = YouTubeUser.objects.filter(email=email).first()
+            if youtube_user:
+                youtube_user.payment_term = payment_term
+                youtube_user.payment_plan = payment_plan
+                youtube_user.amount = amount
+                youtube_user.currency = currency_symbol
+                youtube_user.save()
+                
+           
+            # Update or create YouTubeUser entry in the database
+            else:
+                # If the user doesn't exist, create a new one
+                youtube_user = YouTubeUser.objects.create(
+                    email=email,
+                    channel_name=channel_name,
+                    role=role,
+                    goal=goal,
+                    discovery=discovery,
+                    payment_term=payment_term,
+                    payment_plan=payment_plan,
+                    amount=amount,
+                    currency=currency_symbol
+                )
+            print("youtube user updated")    
+            # Create Razorpay Plan (this step should ideally be done on Razorpay Dashboard or once globally)
+            
+            # Use the predefined Razorpay plan_id to create a subscription
+            try:
+                subscription = razorpay_client.subscription.create({
+                    "plan_id": predefined_plan.plan_id,  # Use the stored plan_id
+                    "customer_notify": 1,
+                    "total_count": None  # Unlimited billing cycles
+                })
+            except Exception as e:
+                print(f"Error in Razorpay subscription creation: {str(e)}")
+                return JsonResponse({"success": False, "error": "Subscription creation failed."})
+            # Example: Create a trial subscription for the user
+            Subscription_Data.objects.create(
+                youtube_user=youtube_user,
+                plan_name=payment_plan,
+                start_date=timezone.now(),
+                end_date=timezone.now() + timezone.timedelta(days=30),
+                is_active=True,
+                razorpay_subscription_id=subscription['id']
+            )    
+            # Example: Log a dummy payment for the trial (can be updated for actual payments)
+            Payment.objects.create(
+                youtube_user=youtube_user,
+                payment_id="TRIAL_PAYMENT",
+                amount=int(amount * 100),
+                currency=currency_symbol,
+                status="success",
+                payment_date=timezone.now(),
+                payment_term = payment_term
+            )
+            
+             # Save payment details in session
+            request.session['payment_term'] = payment_term  
+            request.session['payment_plan'] = payment_plan 
+            request.session['amount'] = str(amount)
+            request.session['currency'] = currency_symbol
+            # Return success response
+            return JsonResponse({"success": True, "subscription_id": subscription['id']})
+        except Exception as e:
+            return JsonResponse({"success": False, "error": str(e)})
+    return JsonResponse({"success": False, "error": "Invalid request method"})  
+
+
+from django.urls import reverse
+@csrf_exempt
+def cancel_subscription(request):
+    if request.method == "POST":
+        try:
+            # Parse subscription ID from the request body
+            data = json.loads(request.body)
+            subscription_id = data.get("subscription_id")
+
+            if not subscription_id:
+                return JsonResponse({"success": False, "error": "No subscription ID provided."})
+
+            # Cancel the subscription via Razorpay API
+            razorpay_client.subscription.cancel(subscription_id)
+
+            # Update the subscription's status in the database
+            subscription = Subscription_Data.objects.get(razorpay_subscription_id=subscription_id)
+            subscription.is_active = False
+            subscription.status = 'cancelled'
+            subscription.save()
+             # Redirect to the user dashboard
+            user_dashboard_url = reverse('user_dashboard')
+            return JsonResponse({"success": True, "message": "Subscription canceled successfully.", "redirect_url": user_dashboard_url})
+        except Subscription_Data.DoesNotExist:
+            return JsonResponse({"success": False, "error": "Subscription not found."})
+        # except Exception as e:
+        #     return JsonResponse({"success": False, "error": str(e)})
+    return JsonResponse({"success": False, "error": "Invalid request method."})
+
+def check_user_login(request):
+    if request.method == "POST":
+        username = request.POST.get("username")
+        email = request.POST.get("email")
+        print("view function")
+        try:
+            # Fetch the YouTubeUser
+            user = YouTubeUser.objects.get(username=username, email=email)
+
+            # Fetch the active subscription for the user, if it exists
+            subscription = Subscription_Data.objects.filter(
+                youtube_user=user,
+                is_active=True,
+                status='active'
+            ).first()  # Use .first() to get the first matching subscription or None
+
+            # Store user info in session
+            request.session['user_id'] = user.id
+            request.session['username'] = user.username
+            request.session['email'] = user.email
+            request.session['channel_name'] = user.channel_name
+            # Check if a subscription exists
+            if subscription:
+                subscription_id = subscription.razorpay_subscription_id
+                print("subscription_id:", subscription_id)
+                # Store subscription details in session
+                request.session['subscription_id'] = subscription.razorpay_subscription_id
+                request.session['subscription_plan'] = subscription.plan_name
+            else:
+                subscription_id = None
+                request.session['subscription_id'] = None
+                request.session['subscription_plan'] = None
+
+            # Redirect to the user dashboard
+            return render(request,'user_dashboard1.html',{'subscription_id':subscription_id})
+
+        except YouTubeUser.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Invalid credentials'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+
+    return redirect('user_dashboard')
+
+
+# View for logging out
+def logout_user(request):
+    request.session.clear()  # Clear session
+    return redirect(user_dashboard)    
+
+def razorpay_webhook_old(request):
+    print("webhook triggered")
+    try:
+        data = json.loads(request.body)
+        event = data.get('event')
+        payload = data.get('payload', {})
+
+        if event == "subscription.charged":
+            # Update payment success
+            subscription_id = payload['subscription']['entity']['id']
+            payment_id = payload['payment']['entity']['id']
+
+            subscription = Subscription_Data.objects.get(razorpay_subscription_id=subscription_id)
+            Payment.objects.create(
+                youtube_user=subscription.youtube_user,
+                payment_id=payment_id,
+                amount=subscription.youtube_user.amount,
+                currency=subscription.youtube_user.currency,
+                status="success",
+                payment_date=timezone.now()
+            )
+
+        elif event == "subscription.cancelled":
+            # Mark subscription as inactive
+            subscription_id = payload['subscription']['entity']['id']
+            subscription = Subscription_Data.objects.get(razorpay_subscription_id=subscription_id)
+            subscription.is_active = False
+            subscription.save()
+
+        return HttpResponse(status=200)
+    except Exception as e:
+        return HttpResponse(status=400)
+    
+def calculate_mrr():
+    active_subscriptions = Subscription_Data.objects.filter(is_active=True)
+    return sum(subscription.youtube_user.amount for subscription in active_subscriptions if subscription.youtube_user.payment_term == "monthly")
+
+def calculate_arr():
+    mrr = calculate_mrr()
+    yearly_revenue = sum(
+        subscription.youtube_user.amount for subscription in Subscription_Data.objects.filter(is_active=True, youtube_user__payment_term="Yearly")
+    )
+    return mrr * 12 + yearly_revenue
+def calculate_churn_rate():
+    total_subscriptions = Subscription_Data.objects.count()
+    cancelled_subscriptions = Subscription_Data.objects.filter(is_active=False, updated_at__gte=timezone.now() - timedelta(days=30)).count()
+    return (cancelled_subscriptions / total_subscriptions) * 100 if total_subscriptions > 0 else 0
+
+
+from razorpay.errors import BadRequestError
+
+def verify_razorpay_signature(request):
+    data = json.loads(request.body)
+    razorpay_payment_id = data.get('razorpay_payment_id')
+    razorpay_subscription_id = data.get('razorpay_subscription_id')
+    razorpay_signature = data.get('razorpay_signature')
+
+    # Verify the payment signature
+    params_dict = {
+        'razorpay_order_id': razorpay_subscription_id,
+        'razorpay_payment_id': razorpay_payment_id,
+        'razorpay_signature': razorpay_signature
+    }
+
+    try:
+        razorpay_client.utility.verify_payment_signature(params_dict)
+    except Exception as e:
+        logger.error(f"Payment signature verification failed: {str(e)}")
+        return JsonResponse({"success": False, "error": "Payment signature verification failed."})
+    
+    return None  # No error, signature is valid
+    
+
 def payment_page(request):
     return render(request, 'payment.html')
 

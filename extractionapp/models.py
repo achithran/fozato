@@ -1,5 +1,5 @@
 from django.db import models
-# from django.contrib.auth.models import User
+from django.contrib.auth.models import User
 
 class Keyword(models.Model):
     keyword = models.CharField(max_length=255)
@@ -50,10 +50,73 @@ class YouTubeUser(models.Model):
     discovery=models.CharField(max_length=100,null=True, blank=True)
     free_trial_start_date = models.DateTimeField(null=True, blank=True)
     trial_status = models.CharField(max_length=20, default='Active', choices=[('Active', 'Active'), ('Expired', 'Expired')])
+    payment_term = models.CharField(
+        max_length=20,
+        choices=[('Yearly', 'Yearly'), ('Monthly', 'Monthly')],
+        null=True,
+        blank=True
+    )
+    payment_plan = models.CharField(
+        max_length=20,
+        choices=[('Basic', 'Basic'), ('Standard', 'Standard'), ('Premium', 'Premium')],
+        null=True,
+        blank=True
+    )
+    amount = models.DecimalField(max_digits=20, decimal_places=2, null=True, blank=True)
+    currency = models.CharField(max_length=10, null=True, blank=True)  # Field to store the currency (USD, INR)
+
 
 
     def __str__(self):
         return f"{self.username} ({self.channel_name})"
+
+class Subscription_Data(models.Model):
+    youtube_user = models.ForeignKey('YouTubeUser', on_delete=models.CASCADE)  # Link to YouTubeUser
+    plan_name = models.CharField(max_length=100)  # e.g., 'Basic', 'Premium', etc.
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    razorpay_subscription_id = models.CharField(max_length=255, unique=True,null=True)
+    status = models.CharField(max_length=20, choices=[('active', 'Active'), ('cancelled', 'Cancelled')], default='active',null=True)
+
+
+    def __str__(self):
+        return f"{self.plan_name} subscription for {self.youtube_user.username}"
+    
+
+class Payment(models.Model):
+    youtube_user = models.ForeignKey('YouTubeUser', on_delete=models.CASCADE)  # Link to YouTubeUser
+    payment_id = models.CharField(max_length=255)  # Razorpay payment ID
+    subscription = models.ForeignKey('Subscription_Data', on_delete=models.SET_NULL, null=True, blank=True)  # Link to subscription
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    currency = models.CharField(max_length=10, default='INR')  # Currency like 'INR', 'USD'
+    status = models.CharField(max_length=20, choices=[('success', 'Success'), ('failed', 'Failed'), ('pending', 'Pending')])
+    payment_date = models.DateTimeField()
+    razorpay_order_id = models.CharField(max_length=255, null=True, blank=True)  # Razorpay order ID
+    razorpay_signature = models.CharField(max_length=255, null=True, blank=True)  # Razorpay signature
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Payment for {self.youtube_user.username} - {self.amount} {self.currency}"
+
+class PaymentPlan(models.Model):
+    CURRENCY_CHOICES = [
+        ('INR', 'Indian Rupee'),
+        ('USD', 'US Dollar'),
+    ]
+    
+    name = models.CharField(max_length=100)  # e.g., 'Basic', 'Premium'
+    plan_id = models.CharField(max_length=255, unique=True)  # Razorpay Plan ID
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    interval = models.CharField(max_length=10)  # e.g., 'monthly', 'yearly'
+    currency = models.CharField(max_length=10, choices=CURRENCY_CHOICES, default='INR')  # Currency with choices
+    
+    def __str__(self):
+        return f"{self.name} ({self.currency})"
+
 
     
 class UserRole(models.Model):
@@ -113,6 +176,20 @@ class PaymentDetails(models.Model):
     order_id = models.CharField(max_length=100, null=True, blank=True)
     signature = models.TextField(null=True, blank=True)
 
+
+class AffiliateUser(models.Model):
+    email = models.EmailField(unique=True)
+    referral_code = models.CharField(max_length=20, unique=True)
+    user_logged_in_date = models.DateTimeField(null=True, blank=True)  # Store the login date
+    username = models.CharField(max_length=255,null=True, blank=True)
+    channel_name = models.CharField(max_length=255,null=True, blank=True)
+    free_trial_start_date = models.DateTimeField(null=True, blank=True)
+    trial_status = models.CharField(max_length=20, default='Active', choices=[('Active', 'Active'), ('Expired', 'Expired')])
+    user_email = models.EmailField(unique=True,null=True, blank=True)
+
+
+    def __str__(self):
+        return self.email
 
 
 

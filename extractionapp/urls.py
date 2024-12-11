@@ -30,6 +30,8 @@ urlpatterns = [
     path('samplepage/',views.samplepage,name='samplepage'),
     path('checkout/',views.checkout,name='checkout'),
     path('affiliate_dashboard/',views.affiliate_dashboard,name='affiliate_dashboard'),
+    path('referal_analytics/',views.referal_analytics,name="referal_analytics"),
+    path('generate-referral/', views.generate_referral, name='generate_referral'),
     path('mobilenumber/',views.mobilenumber,name='mobilenumber'),
     path('contactsave/',views.contactsave,name='contactsave'),
     path('save-payment-details/', views.save_payment_details, name='save_payment_details'),
@@ -38,6 +40,15 @@ urlpatterns = [
     path('extraction_from_url_using_scrapy/',views.extraction_from_url_using_scrapy,name='extraction_from_url_using_scrapy'),
     path('extraction_from_url_api/',views.extraction_from_url_api,name='extraction_from_url_api'),
     path('user_dashboard/',views.user_dashboard,name='user_dashboard'),
-    path('youtube_url/',views.youtube_url,name='youtube_url')
+    path('youtube_url/',views.youtube_url,name='youtube_url'),
+    path('update-payment-details/', views.update_payment_details, name='update_payment_details'),
+    path('process-payment/', views.process_payment, name='process_payment'),
+  
+    path('user_dashboard_settings/',views.user_dahboard_settings,name='user_dashboard_settings'),
+    path('login/', views.check_user_login, name='login'),
+    path('logout/', views.logout_user, name='logout'),
+    path('cancel-subscription/', views.cancel_subscription, name='cancel_subscription'),
+    path('razorpay-webhook/', views.update_payment_details, name='razorpay-webhook'),
+
 
 ]

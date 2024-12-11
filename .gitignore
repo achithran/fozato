@@ -8,4 +8,5 @@ media/uploads/*.wav
 media/media/videos/
 media/uploads
 *.mp4
+config.py
 

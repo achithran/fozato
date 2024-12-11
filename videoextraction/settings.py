@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'extractionapp',
+    'adminapp',
     'sslserver',
     'django_extensions',
     'corsheaders',
@@ -60,7 +61,13 @@ MIDDLEWARE = [
 
 SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 60 * 60 * 24  # 1 day
-SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Ensure sessions are not expired when the browser is closed
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True  # Ensure sessions are not expired when the browser is closed
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+# SESSION_COOKIE_HTTPONLY = True
+SESSION_SAVE_EVERY_REQUEST = True
+CSRF_TRUSTED_ORIGINS = ['https://localhost:8000']
+SESSION_COOKIE_SAMESITE= 'Lax'  # Allow cookies for same-site navigation
+SESSION_COOKIE_DOMAIN = None     # Default for localhost
 
 ROOT_URLCONF = 'videoextraction.urls'
 
@@ -190,11 +197,23 @@ SCRAPY_SETTINGS_MODULE = 'trends.settings'  # Path to Scrapy settings
 
 CORS_ALLOWED_ORIGINS = [
     "https://studio.youtube.com",
+    "https://localhost:8000",
+
+     "https://ada3-103-161-55-72.ngrok-free.app"
+                 
 ]
 CORS_ALLOW_ALL_ORIGINS = True
 CSRF_TRUSTED_ORIGINS = [
     "https://studio.youtube.com",
     "http://127.0.0.1:9000",
+   
+     "https://ada3-103-161-55-72.ngrok-free.app"
+    
 ]
-ALLOWED_HOSTS = ["127.0.0.1", "localhost", "studio.youtube.com"]
+ALLOWED_HOSTS = ["127.0.0.1", 
+                 "localhost", 
+                 "studio.youtube.com",
+                 "6115-103-161-55-15.ngrok-free.app",  # Add your ngrok URL here
+                 "ada3-103-161-55-72.ngrok-free.app"
+                 ]
 
